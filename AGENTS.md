@@ -169,6 +169,7 @@ Available components:
 | dclaw-learn | 8093 | 3003 | dclaw_learn |
 | dclaw-code | 8094 | 3005 | dclaw_code |
 | dclaw-legal | 8099 | 3013 | dclaw_legal |
+| **dclaw-secure** | **8031** | **3031** | **dclaw_secure** |
 | dclaw-crm | 8095 | 3006 | dclaw_crm |
 | dclaw-finance | 8096 | 3007 | dclaw_finance |
 | dclaw-hr | 8097 | 3008 | dclaw_hr |

@@ -9,6 +9,7 @@ from alembic import context
 
 from app.core.config import settings
 from app.models.base import Base
+from app.models.asset import Asset
 
 # this is the Alembic Config object
 config = context.config
