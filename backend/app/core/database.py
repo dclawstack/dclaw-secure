@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from app.core.config import settings
 from app.models.base import Base
+import app.models  # Import all models to register with Base.metadata
 
 engine = create_async_engine(
     settings.database_url,
