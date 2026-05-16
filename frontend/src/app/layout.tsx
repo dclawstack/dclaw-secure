@@ -1,13 +1,19 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import AppShell from "@/components/app-shell"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "DClaw Secure",
-  description: "Security and compliance management platform",
+  title: "DClaw Secure — Security & Compliance Platform",
+  description:
+    "Modern vulnerability management, asset inventory, security scanning, and compliance automation. Open-source. AI-first. Deploy in 48 hours.",
+  openGraph: {
+    title: "DClaw Secure — Security & Compliance Platform",
+    description:
+      "Modern vulnerability management, asset inventory, security scanning, and compliance automation.",
+    type: "website",
+  },
 }
 
 export default function RootLayout({
@@ -17,9 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <AppShell>{children}</AppShell>
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }

@@ -178,7 +178,7 @@ function AssetForm({
             min={0}
             max={100}
             value={form.risk_score}
-            onChange={(e) => setForm({ ...form, risk_score: e.target.value })}
+            onChange={(e) => setForm({ ...form, risk_score: Number(e.target.value) })}
           />
         </div>
       </div>

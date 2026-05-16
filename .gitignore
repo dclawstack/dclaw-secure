@@ -13,3 +13,7 @@
 vault/.obsidian/workspace*
 vault/.obsidian/cache*
 vault/.obsidian/graph.json
+.vercel
+
+# Generated
+graphify-out/
