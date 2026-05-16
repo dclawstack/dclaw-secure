@@ -1,5 +1,8 @@
 # DClaw Secure — v1.2 Strategic Product Roadmap
 
+> 📘 **REVISED PRD v2.3 available:** See `REVISED-PRD.md` for complete gap analysis, current state, and full feature roadmap.
+
+
 > **App:** DClaw Secure (Vertical SaaS — Security & Compliance Management)
 > **Backend Port:** 8031 | **Frontend Port:** 3031 | **Database:** `dclaw_secure`
 > **Target:** Y Combinator S27-ready security compliance platform
