@@ -10,6 +10,7 @@ from alembic import context
 from app.core.config import settings
 from app.models.base import Base
 from app.models.asset import Asset
+from app.models.vulnerability import Vulnerability
 
 # this is the Alembic Config object
 config = context.config
