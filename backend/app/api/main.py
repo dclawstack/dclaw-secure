@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.routes import health
-from app.api.v1 import assets, vulnerabilities, security_scans
+from app.api.v1 import assets, vulnerabilities, security_scans, dashboard
 
 
 @asynccontextmanager
@@ -32,3 +32,4 @@ app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(assets.router, prefix="/api/v1/assets", tags=["assets"])
 app.include_router(vulnerabilities.router, prefix="/api/v1/vulnerabilities", tags=["vulnerabilities"])
 app.include_router(security_scans.router, prefix="/api/v1/scans", tags=["security-scans"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])

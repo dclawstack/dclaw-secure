@@ -1,123 +1,279 @@
 "use client";
 
-import { useState } from "react";
-import { Shield, AlertTriangle, CheckCircle } from "lucide-react";
-import { api, SecurityScan } from "@/lib/api";
+import { useEffect, useState } from "react";
+import {
+  Shield,
+  Server,
+  Bug,
+  ScanLine,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Activity,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { getDashboardStats } from "@/lib/api";
+import type { SecurityScan } from "@/lib/api";
 
-export default function Dashboard() {
-  const [targetUrl, setTargetUrl] = useState("");
-  const [scanType, setScanType] = useState("Web");
-  const [result, setResult] = useState<SecurityScan | null>(null);
-  const [loading, setLoading] = useState(false);
+interface DashboardData {
+  total_assets: number;
+  total_vulnerabilities: number;
+  critical_vulnerabilities: number;
+  open_vulnerabilities: number;
+  total_scans: number;
+  assets_by_environment: Record<string, number>;
+  vulnerabilities_by_severity: Record<string, number>;
+  recent_scans: SecurityScan[];
+}
 
-  const runScan = async () => {
-    if (!targetUrl) return;
-    setLoading(true);
-    try {
-      const data = await api<SecurityScan>("/scans", {
-        method: "POST",
-        body: JSON.stringify({ target_url: targetUrl, scan_type: scanType }),
-      });
-      setResult(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  subtitle,
+  variant = "default",
+}: {
+  title: string;
+  value: number;
+  icon: React.ElementType;
+  subtitle?: string;
+  variant?: "default" | "danger" | "warning" | "success";
+}) {
+  const colorClasses = {
+    default: "text-foreground",
+    danger: "text-red-600",
+    warning: "text-amber-600",
+    success: "text-green-600",
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-3xl space-y-6">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-[#EF4444]" />
-          <h1 className="text-2xl font-bold text-[#EF4444]">DClaw Secure</h1>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          {title}
+        </CardTitle>
+        <Icon className={`h-4 w-4 ${colorClasses[variant]}`} />
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-bold ${colorClasses[variant]}`}>
+          {value}
         </div>
-
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold">New Scan</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium">Target URL</label>
-              <input
-                type="text"
-                value={targetUrl}
-                onChange={(e) => setTargetUrl(e.target.value)}
-                placeholder="https://example.com"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#EF4444]"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Scan type</label>
-              <select
-                value={scanType}
-                onChange={(e) => setScanType(e.target.value)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#EF4444]"
-              >
-                <option>Web</option>
-                <option>API</option>
-                <option>Container</option>
-              </select>
-            </div>
-          </div>
-          <button
-            onClick={runScan}
-            disabled={loading || !targetUrl}
-            className="mt-4 inline-flex items-center justify-center rounded-md bg-[#EF4444] px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-[#dc2626] disabled:opacity-50"
-          >
-            {loading ? "Running..." : "Run Scan"}
-          </button>
-        </div>
-
-        {result && (
-          <div className="rounded-lg border bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">Scan Results</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-md bg-gray-50 p-4">
-                <p className="text-sm text-muted-foreground">Risk score</p>
-                <p className="text-2xl font-bold text-[#EF4444]">{result.risk_score}</p>
-              </div>
-              <div className="rounded-md bg-gray-50 p-4">
-                <p className="text-sm text-muted-foreground">Vulnerabilities found</p>
-                <p className="text-2xl font-bold">{result.vulnerabilities.length}</p>
-              </div>
-              <div className="rounded-md bg-gray-50 p-4">
-                <p className="text-sm text-muted-foreground">Status</p>
-                <div className="flex items-center gap-2 text-2xl font-bold text-green-600">
-                  <CheckCircle className="h-6 w-6" />
-                  {result.status}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <h3 className="mb-2 text-sm font-semibold">Remediation</h3>
-              {result.vulnerabilities.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No vulnerabilities detected.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {result.vulnerabilities.map((v, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-2 rounded-md border border-red-100 bg-red-50 p-3 text-sm"
-                    >
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#EF4444]" />
-                      <div>
-                        <p className="font-medium">
-                          {v.name} — {v.severity}
-                        </p>
-                        <p className="text-muted-foreground">
-                          Review and patch the affected component. Apply latest security updates and validate input sanitization.
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getDashboardStats()
+      .then((stats) => {
+        setData(stats as unknown as DashboardData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Activity className="h-5 w-5 animate-spin" />
+          Loading dashboard...
+        </div>
       </div>
-    </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5" />
+          <span className="font-medium">Failed to load dashboard</span>
+        </div>
+        <p className="mt-1 text-sm">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
+          Security posture overview
+        </p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Assets"
+          value={data?.total_assets ?? 0}
+          icon={Server}
+          subtitle="Tracked in inventory"
+        />
+        <StatCard
+          title="Vulnerabilities"
+          value={data?.total_vulnerabilities ?? 0}
+          icon={Bug}
+          subtitle={`${data?.open_vulnerabilities ?? 0} open`}
+          variant="warning"
+        />
+        <StatCard
+          title="Critical"
+          value={data?.critical_vulnerabilities ?? 0}
+          icon={AlertTriangle}
+          subtitle="Immediate action needed"
+          variant="danger"
+        />
+        <StatCard
+          title="Total Scans"
+          value={data?.total_scans ?? 0}
+          icon={ScanLine}
+          subtitle="Security scans run"
+        />
+      </div>
+
+      {/* Secondary stats */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">
+              Assets by Environment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data?.assets_by_environment &&
+            Object.keys(data.assets_by_environment).length > 0 ? (
+              <div className="space-y-2">
+                {Object.entries(data.assets_by_environment).map(
+                  ([env, count]) => (
+                    <div
+                      key={env}
+                      className="flex items-center justify-between rounded-md bg-muted px-3 py-2"
+                    >
+                      <span className="text-sm capitalize">{env}</span>
+                      <span className="text-sm font-semibold">{count}</span>
+                    </div>
+                  )
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No assets tracked yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">
+              Vulnerabilities by Severity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data?.vulnerabilities_by_severity &&
+            Object.keys(data.vulnerabilities_by_severity).length > 0 ? (
+              <div className="space-y-2">
+                {Object.entries(data.vulnerabilities_by_severity).map(
+                  ([sev, count]) => {
+                    const variant =
+                      sev === "critical"
+                        ? "destructive"
+                        : sev === "high"
+                        ? "destructive"
+                        : sev === "medium"
+                        ? "secondary"
+                        : "outline";
+                    return (
+                      <div
+                        key={sev}
+                        className="flex items-center justify-between rounded-md bg-muted px-3 py-2"
+                      >
+                        <Badge variant={variant as any} className="capitalize">
+                          {sev}
+                        </Badge>
+                        <span className="text-sm font-semibold">{count}</span>
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No vulnerabilities recorded.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent scans */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Recent Scans</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data?.recent_scans && data.recent_scans.length > 0 ? (
+            <div className="space-y-3">
+              {data.recent_scans.map((scan) => (
+                <div
+                  key={scan.id}
+                  className="flex items-center justify-between rounded-md border px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <ScanLine className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium capitalize">
+                        {scan.scan_type} Scan
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Status: {scan.status}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge
+                      variant={
+                        scan.status === "completed"
+                          ? "default"
+                          : scan.status === "failed"
+                          ? "destructive"
+                          : "secondary"
+                      }
+                      className="capitalize"
+                    >
+                      {scan.status}
+                    </Badge>
+                    {scan.findings_count > 0 && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {scan.findings_count} findings
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No scans have been run yet.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
