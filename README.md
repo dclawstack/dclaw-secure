@@ -67,6 +67,12 @@ Keep `pytest-asyncio==0.24.0` pinned in `requirements.txt`. v1.3.0 breaks fixtur
 
 > **Rule:** New apps take the next available port. Update this table when assigning.
 
+## Contributors
+
+| Name | Email |
+|------|-------|
+| Rajendra M | 01.r.machani@gmail.com |
+
 ## Files You Must Customize
 
 | File | What to Change |
