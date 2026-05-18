@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.models.base import Base
 from app.models.asset import Asset
 from app.models.vulnerability import Vulnerability
+from app.models.security_scan import SecurityScan
 
 # this is the Alembic Config object
 config = context.config

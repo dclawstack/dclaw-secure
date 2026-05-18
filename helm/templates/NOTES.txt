@@ -1,4 +1,4 @@
-DClaw App deployed!
+DClaw Secure deployed!
 
-Backend: {{ include "dclaw-app.fullname" . }}-backend
-Frontend: {{ include "dclaw-app.fullname" . }}-frontend
+Backend: {{ include "dclaw-secure.fullname" . }}-backend
+Frontend: {{ include "dclaw-secure.fullname" . }}-frontend
