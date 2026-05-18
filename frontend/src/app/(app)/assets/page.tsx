@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Server, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Server, Pencil, Trash2, AlertTriangle, ScanLine, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,8 +20,9 @@ import {
   createAsset,
   updateAsset,
   deleteAsset,
+  runCspmScan,
 } from "@/lib/api";
-import type { Asset, AssetType, Environment, AssetStatus, CloudProvider } from "@/lib/api";
+import type { Asset, AssetType, Environment, AssetStatus, CloudProvider, CspmScanResponse } from "@/lib/api";
 
 const ASSET_TYPES: AssetType[] = [
   "server",
@@ -204,6 +205,8 @@ export default function AssetsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [filterEnv, setFilterEnv] = useState<string>("");
+  const [cspmRunning, setCspmRunning] = useState(false);
+  const [cspmResult, setCspmResult] = useState<CspmScanResponse | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -241,30 +244,61 @@ export default function AssetsPage() {
     load();
   };
 
+  const handleCspmScan = async () => {
+    setCspmRunning(true);
+    setCspmResult(null);
+    try {
+      const result = await runCspmScan();
+      setCspmResult(result);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setCspmRunning(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Assets</h1>
-          <p className="text-sm text-muted-foreground">
-            Security asset inventory
-          </p>
+          <p className="text-sm text-muted-foreground">Security asset inventory</p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Asset
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Add Asset</DialogTitle>
-            </DialogHeader>
-            <AssetForm onSubmit={handleCreate} submitLabel="Create Asset" />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleCspmScan} disabled={cspmRunning}>
+            {cspmRunning
+              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Scanning...</>
+              : <><ScanLine className="mr-2 h-4 w-4" />CSPM Scan</>}
+          </Button>
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Asset
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add Asset</DialogTitle>
+              </DialogHeader>
+              <AssetForm onSubmit={handleCreate} submitLabel="Create Asset" />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {cspmResult && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm">
+          <p className="font-medium text-green-800">
+            CSPM scan complete — {cspmResult.scanned_assets} assets scanned,&nbsp;
+            <span className="font-bold">{cspmResult.new_findings} new findings</span>
+            {cspmResult.skipped_duplicates > 0 && `, ${cspmResult.skipped_duplicates} already tracked`}.
+          </p>
+          {cspmResult.new_findings > 0 && (
+            <p className="mt-1 text-green-700">New vulnerabilities have been added to the Vulnerabilities page.</p>
+          )}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex items-center gap-2">

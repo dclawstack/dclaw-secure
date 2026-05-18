@@ -2,13 +2,40 @@
 
 import uuid
 from datetime import datetime, date
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 ControlStatusLiteral = Literal[
     "not_implemented", "partially_implemented", "implemented", "not_applicable"
 ]
+EvidenceTypeLiteral = Literal["screenshot", "export", "policy", "scan_report", "manual"]
+
+
+# ── Evidence ──────────────────────────────────────────────────────────────────
+
+class EvidenceCreate(BaseModel):
+    evidence_type: EvidenceTypeLiteral = "manual"
+    description: str = Field(..., min_length=1, max_length=512)
+    artifact_url: str | None = Field(None, max_length=1024)
+    artifact_data: dict[str, Any] | None = None
+    collected_by: str | None = Field(None, max_length=255)
+
+
+class EvidenceOut(EvidenceCreate):
+    id: uuid.UUID
+    control_id: uuid.UUID
+    collected_at: datetime
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EvidenceListResponse(BaseModel):
+    items: list[EvidenceOut]
+    total: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FrameworkBase(BaseModel):
@@ -60,6 +87,7 @@ class ControlUpdate(BaseModel):
 class ControlOut(ControlBase):
     id: uuid.UUID
     framework_id: uuid.UUID
+    evidence: list[EvidenceOut] = []
     created_at: datetime
     updated_at: datetime
 

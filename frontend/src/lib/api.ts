@@ -115,6 +115,8 @@ export interface Vulnerability {
   remediation: string | null;
   discovered_at: string;
   resolved_at: string | null;
+  business_impact_score: number | null;
+  ai_priority_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -160,6 +162,10 @@ export async function updateVulnerability(id: string, data: VulnerabilityUpdate)
 
 export async function deleteVulnerability(id: string): Promise<void> {
   await fetch(`/api/v1/vulnerabilities/${id}`, { method: "DELETE" });
+}
+
+export async function prioritizeVulnerability(id: string): Promise<Vulnerability> {
+  return fetchJson<Vulnerability>(`/api/v1/vulnerabilities/${id}/prioritize`, { method: "POST" });
 }
 
 // ─── Security Scans ───
@@ -447,6 +453,73 @@ export async function updateControl(id: string, data: ControlUpdate): Promise<Co
 
 export async function deleteControl(id: string): Promise<void> {
   await fetch(`${API_BASE}/api/v1/controls/${id}`, { method: "DELETE" });
+}
+
+// ─── Compliance Evidence ───
+export type EvidenceType = "screenshot" | "export" | "policy" | "scan_report" | "manual";
+
+export interface ComplianceEvidence {
+  id: string;
+  control_id: string;
+  evidence_type: EvidenceType;
+  description: string;
+  artifact_url: string | null;
+  artifact_data: Record<string, unknown> | null;
+  collected_by: string | null;
+  collected_at: string;
+  created_at: string;
+}
+
+export interface EvidenceCreate {
+  evidence_type: EvidenceType;
+  description: string;
+  artifact_url?: string | null;
+  collected_by?: string | null;
+}
+
+export interface EvidenceListResponse {
+  items: ComplianceEvidence[];
+  total: number;
+}
+
+export async function listEvidence(controlId: string): Promise<EvidenceListResponse> {
+  return fetchJson<EvidenceListResponse>(`/api/v1/controls/${controlId}/evidence`);
+}
+
+export async function addEvidence(controlId: string, data: EvidenceCreate): Promise<ComplianceEvidence> {
+  return fetchJson<ComplianceEvidence>(`/api/v1/controls/${controlId}/evidence`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteEvidence(evidenceId: string): Promise<void> {
+  await fetch(`${API_BASE}/api/v1/evidence/${evidenceId}`, { method: "DELETE" });
+}
+
+// ─── CSPM ───
+export interface CspmFindingResult {
+  asset_id: string;
+  asset_name: string;
+  rule_id: string;
+  cve_id: string;
+  title: string;
+  severity: string;
+  created: boolean;
+}
+
+export interface CspmScanResponse {
+  scanned_assets: number;
+  new_findings: number;
+  skipped_duplicates: number;
+  findings: CspmFindingResult[];
+}
+
+export async function runCspmScan(assetIds?: string[]): Promise<CspmScanResponse> {
+  return fetchJson<CspmScanResponse>("/api/v1/cspm/scan", {
+    method: "POST",
+    body: JSON.stringify({ asset_ids: assetIds ?? null }),
+  });
 }
 
 // ─── AI Chat ───

@@ -267,23 +267,25 @@ AIChatMessage
 ### C2 — ADVANCED FEATURES (YC demo differentiators. Ship if time allows.)
 
 #### C2.1 — AI-Powered Vulnerability Prioritization
-**Priority:** P1 | **Complexity:** 2 | **Status:** ❌ NOT STARTED
-- [ ] AI analyzes vulnerability metadata + asset context to score business impact
-- [ ] Considers: asset environment (prod > dev), data sensitivity, exposure surface
-- [ ] Returns `business_impact_score` overriding generic severity
-- [ ] Backend: Enhancement to Vulnerability service + new field on Vulnerability model
-- [ ] Frontend: Sort/filter by AI-prioritized score on vulnerabilities page
-- [ ] Alembic: Migration to add `business_impact_score` column
+**Priority:** P1 | **Complexity:** 2 | **Status:** ✅ COMPLETE
+
+- [x] `business_impact_score` (Float) and `ai_priority_reason` (Text) columns added to `Vulnerability` model
+- [x] `prioritize_vulnerability()` in `ai_service.py` — calls LLM with vuln + asset context, parses SCORE/REASON response
+- [x] Heuristic fallback: severity × environment multiplier when LLM is unavailable
+- [x] `POST /api/v1/vulnerabilities/{id}/prioritize` — triggers AI scoring, persists to DB
+- [x] Frontend: `VulnerabilityOut` schema updated; vulnerabilities table shows colour-coded AI Risk badge (hover for reason); ✨ button per row triggers prioritization with loading spinner
+- [x] Tests: `tests/test_c2_prioritize.py` — 4 tests (LLM mock, fallback, 404, persistence)
+- [x] Alembic: `0003_c2_ai_vuln_evidence_cspm.py`
 
 #### C2.2 — Automated Compliance Evidence Collection
-**Priority:** P1 | **Complexity:** 2 | **Status:** ❌ NOT STARTED
+**Priority:** P1 | **Complexity:** 2 | **Status:** ✅ COMPLETE
 
 ```
 ComplianceEvidence
 ├── id: UUID (PK)
 ├── control_id: UUID (FK → ComplianceControl, ondelete=CASCADE)
 ├── evidence_type: enum ["screenshot", "export", "policy", "scan_report", "manual"]
-├── description: str (required)
+├── description: str (required, max 512)
 ├── artifact_url: str (optional)
 ├── artifact_data: JSON (optional)
 ├── collected_by: str (optional — "system" or email)
@@ -291,18 +293,22 @@ ComplianceEvidence
 ├── created_at: datetime
 ```
 
-- [ ] Model, schema, repository, router for ComplianceEvidence
-- [ ] Link evidence to controls from compliance page (attach evidence modal)
-- [ ] Optional: scheduled jobs that auto-collect evidence from linked scans
-- [ ] Frontend: Evidence list per control in compliance view
-- [ ] Alembic: Migration for `compliance_evidence` table
+- [x] `ComplianceEvidence` model in `app/models/compliance.py` with `EvidenceType` enum
+- [x] `evidence` relationship on `ComplianceControl` (lazy="selectin")
+- [x] `EvidenceCreate`, `EvidenceOut`, `EvidenceListResponse` schemas; `ControlOut` now includes `evidence: list[EvidenceOut]`
+- [x] `EvidenceRepository` in `compliance_repo.py`
+- [x] API: `GET /controls/{id}/evidence`, `POST /controls/{id}/evidence`, `DELETE /evidence/{id}`
+- [x] Frontend: compliance page shows evidence per control with type icon + description + delete; 📎 button per control opens "Add Evidence" modal
+- [x] Tests: `tests/test_c2_evidence.py` — 6 tests (add, list, delete, included in control GET, 404s)
+- [x] Alembic: `0003_c2_ai_vuln_evidence_cspm.py`
 
 #### C2.3 — Cloud Security Posture Management (CSPM) Mock Integration
-**Priority:** P2 | **Complexity:** 2 | **Status:** ❌ NOT STARTED
-- [ ] Simulate cloud misconfiguration findings (CIS benchmark rules)
-- [ ] Rules: "S3 bucket is public", "Security group allows 0.0.0.0/0 on port 22"
-- [ ] Auto-creates Vulnerability records with `cve_id = "CSPM-*"` identifiers
-- [ ] Frontend: CSPM findings badge/filter on vulnerabilities page
+**Priority:** P2 | **Complexity:** 2 | **Status:** ✅ COMPLETE
+
+- [x] 10 CIS-style rules in `app/services/cspm_service.py`: unowned prod assets (001), public S3 (002), undocumented prod DB (003), high risk score (004), undocumented API (005), dev asset in prod env (006), missing region (007), unowned workstation (008), undocumented domain (009), high-risk repo (010)
+- [x] `POST /api/v1/cspm/scan` — scans all assets or specified `asset_ids`; idempotent (skips existing open findings by `cve_id = "CSPM-{rule_id}"`); returns scan summary + findings list
+- [x] Frontend (assets page): "CSPM Scan" button with spinner; green result banner shows new findings count; findings visible on Vulnerabilities page
+- [x] Tests: `tests/test_c2_cspm.py` — 7 tests (empty inventory, creates findings, idempotent, dev rules not triggered, risk score rule, findings in vulns endpoint, targeted scan)
 
 ---
 
@@ -320,9 +326,9 @@ ComplianceEvidence
 | W2 | C1.2 (Compliance) | 1 | Framework + control mapping | ✅ Done |
 | W2 | C1.3 (Dashboard polish) | 1 | Add compliance + policy widgets | ✅ Done |
 | W3 | C1.4 (AI Copilot) | 2 | LLM chat with DB context | ✅ Done |
-| W3 | C2.1 (AI Prioritization) | 2 | Smart vuln scoring | ❌ Not started |
-| W4 | C2.2 (Evidence) | 2 | Auto-evidence collection | ❌ Not started |
-| W4 | C2.3 (CSPM mock) | 2 | Simulated cloud findings | ❌ Not started |
+| W3 | C2.1 (AI Prioritization) | 2 | Smart vuln scoring | ✅ Done |
+| W4 | C2.2 (Evidence) | 2 | Auto-evidence collection | ✅ Done |
+| W4 | C2.3 (CSPM mock) | 2 | Simulated cloud findings | ✅ Done |
 
 ---
 
@@ -333,7 +339,7 @@ Asset 1--* Vulnerability
 Asset 1--* SecurityScan
 Policy 1--* PolicyAcknowledgment
 ComplianceFramework 1--* ComplianceControl
-ComplianceControl 1--* ComplianceEvidence   (C2.2 — pending)
+ComplianceControl 1--* ComplianceEvidence
 AIChatSession 1--* AIChatMessage
 ```
 
@@ -344,7 +350,7 @@ Asset 1--* SecurityScan               ✅
 Policy 1--* PolicyAcknowledgment      ✅
 ComplianceFramework 1--* ComplianceControl  ✅
 AIChatSession 1--* AIChatMessage      ✅
-ComplianceControl 1--* ComplianceEvidence   ❌ (C2.2)
+ComplianceControl 1--* ComplianceEvidence      ✅
 ```
 
 ---

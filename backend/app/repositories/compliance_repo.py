@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
-from app.models.compliance import ComplianceFramework, ComplianceControl, ControlStatus
+from app.models.compliance import ComplianceFramework, ComplianceControl, ComplianceEvidence, ControlStatus
 from app.repositories.base_repo import BaseRepository
 
 
@@ -73,3 +73,16 @@ class ControlRepository(BaseRepository[ComplianceControl]):
         count_result = await self.db.execute(count_stmt)
         total = count_result.scalar() or 0
         return items, total
+
+
+class EvidenceRepository(BaseRepository[ComplianceEvidence]):
+    def __init__(self, db: AsyncSession):
+        super().__init__(db, ComplianceEvidence)
+
+    async def list_by_control(self, control_id: uuid.UUID) -> list[ComplianceEvidence]:
+        result = await self.db.execute(
+            select(ComplianceEvidence)
+            .where(ComplianceEvidence.control_id == control_id)
+            .order_by(ComplianceEvidence.collected_at)
+        )
+        return list(result.scalars().all())

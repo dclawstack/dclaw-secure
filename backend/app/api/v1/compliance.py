@@ -1,15 +1,16 @@
-"""Compliance framework and control router."""
+"""Compliance framework, control and evidence router."""
 
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.models.compliance import ComplianceFramework, ComplianceControl
-from app.repositories.compliance_repo import FrameworkRepository, ControlRepository
+from app.models.compliance import ComplianceFramework, ComplianceControl, ComplianceEvidence
+from app.repositories.compliance_repo import FrameworkRepository, ControlRepository, EvidenceRepository
 from app.schemas.compliance import (
     FrameworkCreate, FrameworkUpdate, FrameworkOut, FrameworkListResponse,
     ControlCreate, ControlUpdate, ControlOut, ControlListResponse,
+    EvidenceCreate, EvidenceOut, EvidenceListResponse,
 )
 
 router = APIRouter(tags=["compliance"])
@@ -145,4 +146,40 @@ async def delete_control(control_id: uuid.UUID, db: AsyncSession = Depends(get_d
     if not ctrl:
         raise HTTPException(status_code=404, detail="Control not found")
     await repo.delete(ctrl)
+    return None
+
+
+# ── Evidence ──────────────────────────────────────────────────────────────────
+
+@router.get("/controls/{control_id}/evidence", response_model=EvidenceListResponse)
+async def list_evidence(control_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    ctrl_repo = ControlRepository(db)
+    if not await ctrl_repo.get_by_id(control_id):
+        raise HTTPException(status_code=404, detail="Control not found")
+    ev_repo = EvidenceRepository(db)
+    items = await ev_repo.list_by_control(control_id)
+    return {"items": items, "total": len(items)}
+
+
+@router.post("/controls/{control_id}/evidence", response_model=EvidenceOut, status_code=201)
+async def add_evidence(
+    control_id: uuid.UUID,
+    payload: EvidenceCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    ctrl_repo = ControlRepository(db)
+    if not await ctrl_repo.get_by_id(control_id):
+        raise HTTPException(status_code=404, detail="Control not found")
+    ev_repo = EvidenceRepository(db)
+    evidence = ComplianceEvidence(control_id=control_id, **payload.model_dump())
+    return await ev_repo.create(evidence)
+
+
+@router.delete("/evidence/{evidence_id}", status_code=204)
+async def delete_evidence(evidence_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    ev_repo = EvidenceRepository(db)
+    ev = await ev_repo.get_by_id(evidence_id)
+    if not ev:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+    await ev_repo.delete(ev)
     return None

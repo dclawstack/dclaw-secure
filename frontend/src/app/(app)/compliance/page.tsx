@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShieldCheck, Plus, ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ShieldCheck, Plus, ChevronDown, ChevronRight, ExternalLink, Paperclip, Trash2, FileCheck2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   listFrameworks, createFramework, listControls, createControl, updateControl,
+  addEvidence, deleteEvidence,
   type ComplianceFramework, type ComplianceControl, type ControlStatus,
+  type ComplianceEvidence, type EvidenceType, type EvidenceCreate,
 } from "@/lib/api";
 
 const STATUS_COLORS: Record<ControlStatus, string> = {
@@ -59,6 +61,9 @@ export default function CompliancePage() {
   const [fwForm, setFwForm] = useState({ name: "", slug: "", version: "", description: "" });
   const [ctrlForm, setCtrlForm] = useState({ control_id: "", title: "", category: "", description: "" });
   const [saving, setSaving] = useState(false);
+  const [evidenceCtrlId, setEvidenceCtrlId] = useState<string | null>(null);
+  const [evForm, setEvForm] = useState<EvidenceCreate>({ evidence_type: "manual", description: "", artifact_url: "", collected_by: "" });
+  const [evSaving, setEvSaving] = useState(false);
 
   async function loadFrameworks() {
     const data = await listFrameworks();
@@ -108,6 +113,50 @@ export default function CompliancePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleAddEvidence() {
+    if (!evidenceCtrlId || !evForm.description) return;
+    setEvSaving(true);
+    try {
+      const payload: EvidenceCreate = {
+        evidence_type: evForm.evidence_type,
+        description: evForm.description,
+        artifact_url: evForm.artifact_url || null,
+        collected_by: evForm.collected_by || null,
+      };
+      const newEv = await addEvidence(evidenceCtrlId, payload);
+      setControls(c => {
+        const updated = { ...c };
+        for (const fwId in updated) {
+          updated[fwId] = updated[fwId].map(ctrl =>
+            ctrl.id === evidenceCtrlId
+              ? { ...ctrl, evidence: [...(ctrl.evidence ?? []), newEv] }
+              : ctrl
+          );
+        }
+        return updated;
+      });
+      setEvidenceCtrlId(null);
+      setEvForm({ evidence_type: "manual", description: "", artifact_url: "", collected_by: "" });
+    } finally {
+      setEvSaving(false);
+    }
+  }
+
+  async function handleDeleteEvidence(ctrlId: string, evId: string) {
+    await deleteEvidence(evId);
+    setControls(c => {
+      const updated = { ...c };
+      for (const fwId in updated) {
+        updated[fwId] = updated[fwId].map(ctrl =>
+          ctrl.id === ctrlId
+            ? { ...ctrl, evidence: (ctrl.evidence ?? []).filter(e => e.id !== evId) }
+            : ctrl
+        );
+      }
+      return updated;
+    });
   }
 
   async function cycleStatus(ctrl: ComplianceControl) {
@@ -230,6 +279,7 @@ export default function CompliancePage() {
                             <TableHead>Category</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Evidence</TableHead>
+                          <TableHead className="w-8" />
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -248,13 +298,34 @@ export default function CompliancePage() {
                                 </button>
                               </TableCell>
                               <TableCell>
-                                {ctrl.evidence_url ? (
-                                  <a href={ctrl.evidence_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
-                                    <ExternalLink className="h-3 w-3" />View
-                                  </a>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                )}
+                                <div className="flex flex-col gap-1">
+                                  {ctrl.evidence_url && (
+                                    <a href={ctrl.evidence_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                                      <ExternalLink className="h-3 w-3" />URL
+                                    </a>
+                                  )}
+                                  {(ctrl.evidence ?? []).map(ev => (
+                                    <div key={ev.id} className="flex items-center gap-1 text-xs">
+                                      <FileCheck2 className="h-3 w-3 text-green-600 shrink-0" />
+                                      <span className="truncate max-w-[120px]" title={ev.description}>{ev.description}</span>
+                                      <button onClick={() => handleDeleteEvidence(ctrl.id, ev.id)} className="text-muted-foreground hover:text-red-500 ml-auto">
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  {!ctrl.evidence_url && (ctrl.evidence ?? []).length === 0 && (
+                                    <span className="text-xs text-muted-foreground">—</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <button
+                                  onClick={() => { setEvidenceCtrlId(ctrl.id); }}
+                                  className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                  title="Add evidence"
+                                >
+                                  <Paperclip className="h-3.5 w-3.5" />
+                                </button>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -268,6 +339,45 @@ export default function CompliancePage() {
           })}
         </div>
       )}
+
+      {/* Add Evidence Dialog */}
+      <Dialog open={!!evidenceCtrlId} onOpenChange={open => !open && setEvidenceCtrlId(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Add Evidence</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div className="space-y-1">
+              <Label>Type</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={evForm.evidence_type}
+                onChange={e => setEvForm(f => ({ ...f, evidence_type: e.target.value as EvidenceType }))}
+              >
+                {(["manual","screenshot","export","policy","scan_report"] as EvidenceType[]).map(t => (
+                  <option key={t} value={t}>{t.replace("_", " ")}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label>Description</Label>
+              <Input value={evForm.description} onChange={e => setEvForm(f => ({ ...f, description: e.target.value }))} placeholder="Screenshot of access control matrix" />
+            </div>
+            <div className="space-y-1">
+              <Label>Artifact URL (optional)</Label>
+              <Input value={evForm.artifact_url ?? ""} onChange={e => setEvForm(f => ({ ...f, artifact_url: e.target.value }))} placeholder="https://..." />
+            </div>
+            <div className="space-y-1">
+              <Label>Collected by (optional)</Label>
+              <Input value={evForm.collected_by ?? ""} onChange={e => setEvForm(f => ({ ...f, collected_by: e.target.value }))} placeholder="alice@example.com" />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setEvidenceCtrlId(null)}>Cancel</Button>
+              <Button onClick={handleAddEvidence} disabled={evSaving || !evForm.description}>
+                {evSaving ? "Adding..." : "Add Evidence"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Control Dialog */}
       <Dialog open={ctrlOpen} onOpenChange={setCtrlOpen}>
