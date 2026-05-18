@@ -61,8 +61,8 @@ Startups and SMBs spend 200-400 hours annually on SOC2/ISO27001 compliance. They
 - [x] `TEAM-ONBOARDING-GUIDE.md`: CRM examples replaced with Secure
 - [x] `SCALING-PLAYBOOK.md`: CRM examples replaced with Secure
 - [x] `backend/alembic/env.py`: `SecurityScan` model added to imports
-- [ ] `frontend/public/dclaw-manifest.json`: DPanel registration file (still missing)
-- [ ] Alembic migration: no migration scripts generated yet (versions/ directory is empty)
+- [x] `frontend/public/dclaw-manifest.json`: DPanel registration file created
+- [x] Alembic migration: `0001_initial_schema.py` created (assets, vulnerabilities, security_scans)
 
 #### C0.2 — Asset Inventory Model + CRUD + API + UI
 **Priority:** P0 | **Complexity:** 0 | **Status:** ✅ COMPLETE
@@ -87,7 +87,7 @@ Asset
 - [x] **Frontend:** `src/app/(app)/assets/page.tsx` (list + create/edit modal)
 - [x] **API client:** `src/lib/api.ts` — typed Asset types and CRUD functions
 - [x] **Tests:** `tests/test_assets.py` — full CRUD coverage
-- [ ] **Alembic migration:** not yet generated (blocked by missing migration script)
+- [x] **Alembic migration:** `0001_initial_schema.py`
 
 #### C0.3 — Vulnerability Model + CRUD + API + UI
 **Priority:** P0 | **Complexity:** 0 | **Status:** ✅ COMPLETE
@@ -345,8 +345,8 @@ Asset 1--* SecurityScan     ✅
 - [x] `pytest-asyncio==0.24.0` pinned
 - [x] Pre-built UI components available
 - [x] No CRM scaffold leftovers in any file
-- [ ] `frontend/public/dclaw-manifest.json` created
-- [ ] Initial alembic migration generated and committed
+- [x] `frontend/public/dclaw-manifest.json` created
+- [x] Initial alembic migration generated and committed (`0001_initial_schema.py`)
 
 ## Success Criteria for v1.2 Demo
 
