@@ -1,0 +1,35 @@
+{
+  "app_id": "secure",
+  "app_name": "DClaw Secure",
+  "category": "Security",
+  "tagline": "AI-native security & compliance platform",
+  "description": "Vulnerability management, asset inventory, policy tracking, and compliance automation. Open-source. AI-first. Deploy in 48 hours.",
+  "color": "#6366F1",
+  "icon": "shield",
+  "version": "1.0.0",
+  "ports": {
+    "backend": 8031,
+    "frontend": 3031
+  },
+  "database": "dclaw_secure",
+  "routes": {
+    "health": "/health/",
+    "api": "/api/v1",
+    "frontend": "/"
+  },
+  "nav": [
+    { "label": "Dashboard", "path": "/dashboard", "icon": "layout-dashboard" },
+    { "label": "Assets", "path": "/assets", "icon": "server" },
+    { "label": "Vulnerabilities", "path": "/vulnerabilities", "icon": "bug" },
+    { "label": "Scans", "path": "/scans", "icon": "scan-line" }
+  ],
+  "features": [
+    "asset-inventory",
+    "vulnerability-management",
+    "security-scanning",
+    "compliance-tracking"
+  ],
+  "status": "active",
+  "maturity": "tier2",
+  "repo": "https://github.com/dclawstack/dclaw-secure"
+}

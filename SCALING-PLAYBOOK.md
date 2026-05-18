@@ -50,16 +50,16 @@ Each new app starts as a **clone of `dclaw-scaffold`**. Three agents work in par
 
 ### Step 0: Pre-Flight (Human — 5 minutes)
 
-1. **Pick the next app** from the backlog (e.g., `dclaw-crm`)
+1. **Pick the next app** from the backlog (e.g., `dclaw-secure`)
 2. **Reserve ports** from the port registry in `dclaw-scaffold/README.md`
 3. **Write `PRODUCT-SPEC.md`** using the template — domain entities, screens, API endpoints
 4. **Clone scaffold:**
    ```bash
-   git clone https://github.com/dclawstack/dclaw-scaffold.git dclaw-crm
-   cd dclaw-crm
-   # Replace placeholders: {APP_NAME} → CRM, ports, DB name
+   git clone https://github.com/dclawstack/dclaw-scaffold.git dclaw-secure
+   cd dclaw-secure
+   # Replace placeholders: {APP_NAME} → Secure, ports, DB name
    ```
-5. **Create GitHub repo** `dclawstack/dclaw-crm` and push the scaffold
+5. **Create GitHub repo** `dclawstack/dclaw-secure` and push the scaffold
 
 ### Step 1: Spawn 3 Parallel Agent Tabs (Simultaneous)
 
@@ -208,7 +208,7 @@ Give each new team member:
 
 Based on common vertical SaaS demand:
 
-1. **dclaw-crm** — Customer relationship management
+1. **dclaw-secure** — Security & compliance management
 2. **dclaw-finance** — Invoicing, expenses, bookkeeping
 3. **dclaw-hr** — Employee directory, time-off, payroll
 4. **dclaw-inventory** — Stock tracking, warehouses, suppliers

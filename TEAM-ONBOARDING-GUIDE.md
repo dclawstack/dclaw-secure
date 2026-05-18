@@ -1,7 +1,7 @@
 # Team Member Onboarding Guide — Building a DClaw App with Parallel Agents
 
 > **Read this entire document before opening any agent tabs.**
-> This guide assumes you have been assigned an app (e.g., `dclaw-crm`) and have write access to its GitHub repo.
+> This guide assumes you have been assigned an app (e.g., `dclaw-secure`) and have write access to its GitHub repo.
 
 ---
 
@@ -36,7 +36,7 @@ Instead of building these one after another (slow), you build them **at the same
 | Item | What It Is | Where You Get It |
 |------|-----------|-----------------|
 | GitHub org invite | Access to `dclawstack` org | Your manager sends it |
-| Assigned app name | e.g., `dclaw-crm` | Your manager tells you |
+| Assigned app name | e.g., `dclaw-secure` | Your manager tells you |
 | Reserved ports | Backend + frontend port numbers | See port registry in `README.md` |
 | `PRODUCT-SPEC.md` | A document describing YOUR app's features | You write this (see template below) |
 | Coding agent access | Claude, Kimi, Cursor, etc. | Your team's tool |
@@ -57,8 +57,8 @@ cd ~/projects
 # Clone the scaffold (this is the template)
 git clone https://github.com/dclawstack/dclaw-scaffold.git dclaw-YOURAPP
 
-# Example: if your app is "crm"
-git clone https://github.com/dclawstack/dclaw-scaffold.git dclaw-crm
+# Example: if your app is "secure"
+git clone https://github.com/dclawstack/dclaw-scaffold.git dclaw-secure
 ```
 
 **What this does:** Copies the template into a new folder named after your app.
@@ -69,38 +69,38 @@ The scaffold has placeholder text like `{APP_NAME}` and `{BACKEND_PORT}`. You mu
 
 **Find/replace in these files:**
 
-| File | What to Replace | Example (for CRM) |
-|------|----------------|-------------------|
-| `backend/app/core/config.py` | `DClaw App` → your name | `DClaw CRM` |
-| `backend/app/api/main.py` | `DClaw App` → your name | `DClaw CRM` |
-| `frontend/package.json` | `dclaw-app-frontend` | `dclaw-crm-frontend` |
-| `frontend/src/app/layout.tsx` | `DClaw App` | `DClaw CRM` |
-| `frontend/src/app/page.tsx` | `DClaw App` | `DClaw CRM` |
-| `docker-compose.yml` | `8000` → backend port | `8095` |
-| `docker-compose.yml` | `3000` → frontend port | `3006` |
-| `docker-compose.yml` | `dclaw_app` → DB name | `dclaw_crm` |
+| File | What to Replace | Example (for Secure) |
+|------|----------------|----------------------|
+| `backend/app/core/config.py` | `DClaw App` → your name | `DClaw Secure` |
+| `backend/app/api/main.py` | `DClaw App` → your name | `DClaw Secure` |
+| `frontend/package.json` | `dclaw-app-frontend` | `dclaw-secure-frontend` |
+| `frontend/src/app/layout.tsx` | `DClaw App` | `DClaw Secure` |
+| `frontend/src/app/page.tsx` | `DClaw App` | `DClaw Secure` |
+| `docker-compose.yml` | `8000` → backend port | `8031` |
+| `docker-compose.yml` | `3000` → frontend port | `3031` |
+| `docker-compose.yml` | `dclaw_app` → DB name | `dclaw_secure` |
 | `AGENTS.md` | `{APP_NAME}`, ports, DB | Fill all placeholders |
 | `PLAN-v1.2.md` | `{APP_NAME}` | Your app name |
 | `README.md` | `{APP_NAME}` | Your app name |
 | `.env.example` | `8000`, `3000`, `dclaw_app` | Your ports and DB |
-| `backend/Dockerfile` | `8000` | `8095` |
-| `frontend/Dockerfile` | `3000` | `3006` |
-| `helm/Chart.yaml` | `dclaw-app` | `dclaw-crm` |
-| `helm/values.yaml` | `dclaw-app` | `dclaw-crm` |
+| `backend/Dockerfile` | `8000` | `8031` |
+| `frontend/Dockerfile` | `3000` | `3031` |
+| `helm/Chart.yaml` | `dclaw-app` | `dclaw-secure` |
+| `helm/values.yaml` | `dclaw-app` | `dclaw-secure` |
 
 **Quick way to do all replacements:**
 ```bash
 cd dclaw-YOURAPP
 
 # Replace app name (run for YOUR name)
-sed -i '' 's/DClaw App/DClaw CRM/g' backend/app/core/config.py backend/app/api/main.py frontend/src/app/layout.tsx frontend/src/app/page.tsx
+sed -i '' 's/DClaw App/DClaw Secure/g' backend/app/core/config.py backend/app/api/main.py frontend/src/app/layout.tsx frontend/src/app/page.tsx
 
 # Replace ports (example: 8095 backend, 3006 frontend)
 sed -i '' 's/8000/8095/g' docker-compose.yml backend/Dockerfile .env.example
 sed -i '' 's/3000/3006/g' docker-compose.yml frontend/Dockerfile .env.example
 
 # Replace DB name
-sed -i '' 's/dclaw_app/dclaw_crm/g' docker-compose.yml backend/app/core/config.py .env.example
+sed -i '' 's/dclaw_app/dclaw_secure/g' docker-compose.yml backend/app/core/config.py .env.example
 ```
 
 ### 1C. Write Your PRODUCT-SPEC.md
@@ -121,7 +121,7 @@ Paste this template and fill it in:
 
 ## Overview
 **App Name:** YOURAPP
-**Domain:** What industry? (e.g., CRM, Finance, HR)
+**Domain:** What industry? (e.g., Security, Finance, HR)
 **Target User:** Who uses it? (e.g., sales teams, accountants)
 
 ## Core Entities
@@ -157,7 +157,7 @@ What should the AI do? (e.g., "predict deal closing probability")
 **Tips for a good PRODUCT-SPEC:**
 - Be specific. "A customer page" is bad. "A page showing customer name, email, company, and a table of their deals" is good.
 - List 2-4 main entities max for v1.0. Don't over-engineer.
-- Copy the examples from `dclaw-crm`, `dclaw-finance`, or `dclaw-hr`.
+- Copy the examples from `dclaw-secure`, `dclaw-finance`, or `dclaw-hr`.
 
 ### 1D. Push to GitHub
 
@@ -492,7 +492,7 @@ Go to `https://github.com/dclawstack/dclaw-YOURAPP/actions` and verify the CI tu
 
 ## Lessons from Building 3 Apps
 
-We built `dclaw-crm`, `dclaw-finance`, and `dclaw-hr` using parallel agents. Here's what we learned:
+We built `dclaw-secure`, `dclaw-finance`, and `dclaw-hr` using parallel agents. Here's what we learned:
 
 ### Lesson 1: shadcn v4 Breaks Everything
 
