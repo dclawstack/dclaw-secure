@@ -8,6 +8,9 @@ import {
   Server,
   Bug,
   ScanLine,
+  FileText,
+  ShieldCheck,
+  Sparkles,
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +20,9 @@ const navItems = [
   { href: "/assets", label: "Assets", icon: Server },
   { href: "/vulnerabilities", label: "Vulnerabilities", icon: Bug },
   { href: "/scans", label: "Scans", icon: ScanLine },
+  { href: "/policies", label: "Policies", icon: FileText },
+  { href: "/compliance", label: "Compliance", icon: ShieldCheck },
+  { href: "/ai", label: "AI Copilot", icon: Sparkles },
 ];
 
 function NavItem({

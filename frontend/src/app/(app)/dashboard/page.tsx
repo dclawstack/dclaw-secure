@@ -7,25 +7,13 @@ import {
   Bug,
   ScanLine,
   AlertTriangle,
-  CheckCircle2,
-  Clock,
   Activity,
+  FileText,
+  CheckCircle2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getDashboardStats } from "@/lib/api";
-import type { SecurityScan } from "@/lib/api";
-
-interface DashboardData {
-  total_assets: number;
-  total_vulnerabilities: number;
-  critical_vulnerabilities: number;
-  open_vulnerabilities: number;
-  total_scans: number;
-  assets_by_environment: Record<string, number>;
-  vulnerabilities_by_severity: Record<string, number>;
-  recent_scans: SecurityScan[];
-}
+import { getDashboardStats, type DashboardStats, type SecurityScan } from "@/lib/api";
 
 function StatCard({
   title,
@@ -67,15 +55,30 @@ function StatCard({
   );
 }
 
+function ComplianceBar({ name, pct }: { name: string; pct: number }) {
+  const color = pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-yellow-500" : "bg-red-500";
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium">{name}</span>
+        <span className="text-muted-foreground">{pct}%</span>
+      </div>
+      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+        <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     getDashboardStats()
       .then((stats) => {
-        setData(stats as unknown as DashboardData);
+        setData(stats);
         setLoading(false);
       })
       .catch((err) => {
@@ -111,12 +114,10 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Security posture overview
-        </p>
+        <p className="text-sm text-muted-foreground">Security posture overview</p>
       </div>
 
-      {/* Stat cards */}
+      {/* Primary stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Assets"
@@ -146,33 +147,29 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Secondary stats */}
+      {/* Compliance posture + Policy acknowledgments */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Assets by Environment
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Shield className="h-4 w-4 text-indigo-500" />
+              Compliance Posture
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {data?.assets_by_environment &&
-            Object.keys(data.assets_by_environment).length > 0 ? (
-              <div className="space-y-2">
-                {Object.entries(data.assets_by_environment).map(
-                  ([env, count]) => (
-                    <div
-                      key={env}
-                      className="flex items-center justify-between rounded-md bg-muted px-3 py-2"
-                    >
-                      <span className="text-sm capitalize">{env}</span>
-                      <span className="text-sm font-semibold">{count}</span>
-                    </div>
-                  )
-                )}
+            {data?.compliance_posture && data.compliance_posture.length > 0 ? (
+              <div className="space-y-4">
+                {data.compliance_posture.map((fw) => (
+                  <ComplianceBar
+                    key={fw.framework_id}
+                    name={fw.framework_name}
+                    pct={fw.compliance_pct}
+                  />
+                ))}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No assets tracked yet.
+                No compliance frameworks configured yet.
               </p>
             )}
           </CardContent>
@@ -180,42 +177,83 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">
-              Vulnerabilities by Severity
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <FileText className="h-4 w-4 text-blue-500" />
+              Policy Acknowledgments
             </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+              <span className="text-sm">Published policies requiring ack</span>
+              <span className="text-sm font-semibold">
+                {data?.published_policies_requiring_ack ?? 0}
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+              <span className="text-sm flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                Total acknowledgments
+              </span>
+              <span className="text-sm font-semibold">
+                {data?.total_acknowledgments ?? 0}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Assets by environment + Vulnerabilities by severity */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Assets by Environment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data?.assets_by_environment &&
+            Object.keys(data.assets_by_environment).length > 0 ? (
+              <div className="space-y-2">
+                {Object.entries(data.assets_by_environment).map(([env, count]) => (
+                  <div
+                    key={env}
+                    className="flex items-center justify-between rounded-md bg-muted px-3 py-2"
+                  >
+                    <span className="text-sm capitalize">{env}</span>
+                    <span className="text-sm font-semibold">{count}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No assets tracked yet.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Vulnerabilities by Severity</CardTitle>
           </CardHeader>
           <CardContent>
             {data?.vulnerabilities_by_severity &&
             Object.keys(data.vulnerabilities_by_severity).length > 0 ? (
               <div className="space-y-2">
-                {Object.entries(data.vulnerabilities_by_severity).map(
-                  ([sev, count]) => {
-                    const variant =
-                      sev === "critical"
-                        ? "destructive"
-                        : sev === "high"
-                        ? "destructive"
-                        : sev === "medium"
-                        ? "secondary"
-                        : "outline";
-                    return (
-                      <div
-                        key={sev}
-                        className="flex items-center justify-between rounded-md bg-muted px-3 py-2"
-                      >
-                        <Badge variant={variant as any} className="capitalize">
-                          {sev}
-                        </Badge>
-                        <span className="text-sm font-semibold">{count}</span>
-                      </div>
-                    );
-                  }
-                )}
+                {Object.entries(data.vulnerabilities_by_severity).map(([sev, count]) => {
+                  const variant =
+                    sev === "critical" || sev === "high" ? "destructive"
+                    : sev === "medium" ? "secondary"
+                    : "outline";
+                  return (
+                    <div
+                      key={sev}
+                      className="flex items-center justify-between rounded-md bg-muted px-3 py-2"
+                    >
+                      <Badge variant={variant as any} className="capitalize">{sev}</Badge>
+                      <span className="text-sm font-semibold">{count}</span>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No vulnerabilities recorded.
-              </p>
+              <p className="text-sm text-muted-foreground">No vulnerabilities recorded.</p>
             )}
           </CardContent>
         </Card>
@@ -237,22 +275,16 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3">
                     <ScanLine className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium capitalize">
-                        {scan.scan_type} Scan
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Status: {scan.status}
-                      </p>
+                      <p className="text-sm font-medium capitalize">{scan.scan_type} Scan</p>
+                      <p className="text-xs text-muted-foreground">Status: {scan.status}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <Badge
                       variant={
-                        scan.status === "completed"
-                          ? "default"
-                          : scan.status === "failed"
-                          ? "destructive"
-                          : "secondary"
+                        scan.status === "completed" ? "default"
+                        : scan.status === "failed" ? "destructive"
+                        : "secondary"
                       }
                       className="capitalize"
                     >
@@ -268,9 +300,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              No scans have been run yet.
-            </p>
+            <p className="text-sm text-muted-foreground">No scans have been run yet.</p>
           )}
         </CardContent>
       </Card>

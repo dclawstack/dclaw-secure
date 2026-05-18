@@ -222,17 +222,278 @@ export async function deleteScan(id: string): Promise<void> {
 }
 
 // ─── Dashboard stats ───
+export interface CompliancePostureItem {
+  framework_id: string;
+  framework_name: string;
+  slug: string;
+  total_controls: number;
+  implemented_controls: number;
+  compliance_pct: number;
+}
+
 export interface DashboardStats {
   total_assets: number;
   total_vulnerabilities: number;
   critical_vulnerabilities: number;
   open_vulnerabilities: number;
   total_scans: number;
+  assets_by_environment: Record<string, number>;
+  vulnerabilities_by_severity: Record<string, number>;
   recent_scans: SecurityScan[];
+  published_policies_requiring_ack: number;
+  total_acknowledgments: number;
+  compliance_posture: CompliancePostureItem[];
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   return fetchJson<DashboardStats>("/api/v1/dashboard/stats");
+}
+
+// ─── Policies ───
+export type PolicyStatus = "draft" | "published" | "archived";
+export type PolicyCategory =
+  | "access_control"
+  | "data_protection"
+  | "incident_response"
+  | "acceptable_use"
+  | "remote_work";
+
+export interface PolicyAcknowledgment {
+  id: string;
+  policy_id: string;
+  employee_email: string;
+  employee_name: string | null;
+  acknowledged_at: string | null;
+  ip_address: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Policy {
+  id: string;
+  title: string;
+  content: string;
+  version: string;
+  status: PolicyStatus;
+  category: PolicyCategory;
+  requires_acknowledgment: boolean;
+  effective_date: string | null;
+  created_at: string;
+  updated_at: string;
+  acknowledgments: PolicyAcknowledgment[];
+}
+
+export interface PolicyCreate {
+  title: string;
+  content: string;
+  version: string;
+  status?: PolicyStatus;
+  category: PolicyCategory;
+  requires_acknowledgment?: boolean;
+  effective_date?: string | null;
+}
+
+export interface PolicyUpdate extends Partial<PolicyCreate> {}
+
+export interface PolicyListResponse {
+  items: Policy[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export async function listPolicies(params?: Record<string, string>): Promise<PolicyListResponse> {
+  const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+  return fetchJson<PolicyListResponse>(`/api/v1/policies${qs}`);
+}
+
+export async function createPolicy(data: PolicyCreate): Promise<Policy> {
+  return fetchJson<Policy>("/api/v1/policies", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function getPolicy(id: string): Promise<Policy> {
+  return fetchJson<Policy>(`/api/v1/policies/${id}`);
+}
+
+export async function updatePolicy(id: string, data: PolicyUpdate): Promise<Policy> {
+  return fetchJson<Policy>(`/api/v1/policies/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deletePolicy(id: string): Promise<void> {
+  await fetch(`${API_BASE}/api/v1/policies/${id}`, { method: "DELETE" });
+}
+
+export async function acknowledgePolicy(
+  id: string,
+  data: { employee_email: string; employee_name?: string; ip_address?: string }
+): Promise<PolicyAcknowledgment> {
+  return fetchJson<PolicyAcknowledgment>(`/api/v1/policies/${id}/acknowledge`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// ─── Compliance ───
+export type ControlStatus =
+  | "not_implemented"
+  | "partially_implemented"
+  | "implemented"
+  | "not_applicable";
+
+export interface ComplianceControl {
+  id: string;
+  framework_id: string;
+  control_id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  status: ControlStatus;
+  evidence_url: string | null;
+  notes: string | null;
+  assigned_to: string | null;
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplianceFramework {
+  id: string;
+  name: string;
+  slug: string;
+  version: string | null;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  controls: ComplianceControl[];
+}
+
+export interface FrameworkCreate {
+  name: string;
+  slug: string;
+  version?: string | null;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export interface ControlCreate {
+  framework_id: string;
+  control_id: string;
+  title: string;
+  description?: string | null;
+  category?: string | null;
+  status?: ControlStatus;
+  evidence_url?: string | null;
+  notes?: string | null;
+  assigned_to?: string | null;
+  due_date?: string | null;
+}
+
+export interface ControlUpdate extends Partial<Omit<ControlCreate, "framework_id">> {}
+
+export interface FrameworkListResponse {
+  items: ComplianceFramework[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface ControlListResponse {
+  items: ComplianceControl[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface FrameworkPosture {
+  framework_id: string;
+  framework_name: string;
+  total: number;
+  implemented: number;
+  partial: number;
+  not_applicable: number;
+  compliance_pct: number;
+}
+
+export async function listFrameworks(params?: Record<string, string>): Promise<FrameworkListResponse> {
+  const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+  return fetchJson<FrameworkListResponse>(`/api/v1/frameworks${qs}`);
+}
+
+export async function createFramework(data: FrameworkCreate): Promise<ComplianceFramework> {
+  return fetchJson<ComplianceFramework>("/api/v1/frameworks", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function getFramework(id: string): Promise<ComplianceFramework> {
+  return fetchJson<ComplianceFramework>(`/api/v1/frameworks/${id}`);
+}
+
+export async function getFrameworkPosture(id: string): Promise<FrameworkPosture> {
+  return fetchJson<FrameworkPosture>(`/api/v1/frameworks/${id}/posture`);
+}
+
+export async function listControls(frameworkId: string, params?: Record<string, string>): Promise<ControlListResponse> {
+  const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+  return fetchJson<ControlListResponse>(`/api/v1/frameworks/${frameworkId}/controls${qs}`);
+}
+
+export async function createControl(data: ControlCreate): Promise<ComplianceControl> {
+  return fetchJson<ComplianceControl>("/api/v1/controls", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateControl(id: string, data: ControlUpdate): Promise<ComplianceControl> {
+  return fetchJson<ComplianceControl>(`/api/v1/controls/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteControl(id: string): Promise<void> {
+  await fetch(`${API_BASE}/api/v1/controls/${id}`, { method: "DELETE" });
+}
+
+// ─── AI Chat ───
+export interface ChatMessage {
+  id: string;
+  session_id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  sources: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  messages: ChatMessage[];
+}
+
+export interface ChatSessionListResponse {
+  items: ChatSession[];
+  total: number;
+}
+
+export interface ChatResponse {
+  session_id: string;
+  message: ChatMessage;
+  sources: Record<string, unknown> | null;
+}
+
+export async function sendChatMessage(
+  message: string,
+  sessionId?: string
+): Promise<ChatResponse> {
+  return fetchJson<ChatResponse>("/api/v1/ai/chat", {
+    method: "POST",
+    body: JSON.stringify({ message, session_id: sessionId }),
+  });
+}
+
+export async function listChatSessions(): Promise<ChatSessionListResponse> {
+  return fetchJson<ChatSessionListResponse>("/api/v1/ai/sessions");
+}
+
+export async function getChatSession(id: string): Promise<ChatSession> {
+  return fetchJson<ChatSession>(`/api/v1/ai/sessions/${id}`);
 }
 
 export { ApiError };

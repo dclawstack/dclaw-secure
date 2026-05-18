@@ -12,6 +12,9 @@ async def test_dashboard_stats_empty(client: AsyncClient):
     assert data["critical_vulnerabilities"] == 0
     assert data["open_vulnerabilities"] == 0
     assert data["total_scans"] == 0
+    assert data["published_policies_requiring_ack"] == 0
+    assert data["total_acknowledgments"] == 0
+    assert data["compliance_posture"] == []
 
 
 @pytest.mark.asyncio
