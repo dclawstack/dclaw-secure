@@ -60,9 +60,10 @@ Startups and SMBs spend 200-400 hours annually on SOC2/ISO27001 compliance. They
 - [x] `README.md`: updated to DClaw Secure specific (was generic scaffold README)
 - [x] `TEAM-ONBOARDING-GUIDE.md`: CRM examples replaced with Secure
 - [x] `SCALING-PLAYBOOK.md`: CRM examples replaced with Secure
-- [x] `backend/alembic/env.py`: `SecurityScan` model added to imports
+- [x] `backend/alembic/env.py`: all new models added to imports
 - [x] `frontend/public/dclaw-manifest.json`: DPanel registration file created
 - [x] Alembic migration: `0001_initial_schema.py` created (assets, vulnerabilities, security_scans)
+- [x] Alembic migration: `0002_add_policies_compliance_ai.py` created (policies, compliance, AI chat)
 
 #### C0.2 — Asset Inventory Model + CRUD + API + UI
 **Priority:** P0 | **Complexity:** 0 | **Status:** ✅ COMPLETE
@@ -113,7 +114,7 @@ Vulnerability
 - [x] **Frontend:** `src/app/(app)/vulnerabilities/page.tsx` (list + severity filters + status transitions)
 - [x] **API client:** `src/lib/api.ts` — typed Vulnerability types and CRUD functions
 - [x] **Tests:** `tests/test_vulnerabilities.py` — full CRUD + filtering coverage
-- [ ] **Alembic migration:** not yet generated
+- [x] **Alembic migration:** `0001_initial_schema.py` (covers vulnerabilities table)
 
 #### C0.4 — SecurityScan Model + CRUD + API + UI (Replace Mock)
 **Priority:** P0 | **Complexity:** 0 | **Status:** ✅ COMPLETE
@@ -138,14 +139,14 @@ SecurityScan
 - [x] **API client:** `src/lib/api.ts` — typed SecurityScan types and CRUD functions
 - [x] **Tests:** `tests/test_security_scans.py` — full CRUD coverage
 - [x] **Note:** Mock router `app/api/v1/secure.py` removed
-- [ ] **Alembic migration:** not yet generated
+- [x] **Alembic migration:** `0001_initial_schema.py` (covers security_scans table)
 
 ---
 
 ### C1 — CORE DIFFERENTIATORS (Where DClaw Secure starts becoming valuable.)
 
 #### C1.1 — Security Policy Management + Employee Acknowledgment
-**Priority:** P0 | **Complexity:** 1 | **Status:** ❌ NOT STARTED
+**Priority:** P0 | **Complexity:** 1 | **Status:** ✅ COMPLETE
 
 ```
 Policy
@@ -171,14 +172,16 @@ PolicyAcknowledgment
 └── updated_at: datetime
 ```
 
-- [ ] **Backend:** Both models, schemas, repositories, routers (`/api/v1/policies`, `/api/v1/policies/{id}/acknowledge`)
-- [ ] **Frontend:** Policy editor, policy list, acknowledgment link/view, compliance % dashboard widget
-- [ ] **Key Metric:** "X% of employees have acknowledged all required policies"
-- [ ] **Tests:** Full CRUD + acknowledgment flow tests
-- [ ] **Alembic:** Generate migration
+- [x] **Backend:** `app/models/policy.py`, `app/schemas/policy.py`, `app/repositories/policy_repo.py`, `app/api/v1/policies.py`
+- [x] **API routes:** `GET/POST /api/v1/policies`, `GET/PUT/DELETE /{id}`, `POST /{id}/acknowledge`
+- [x] **Frontend:** `src/app/(app)/policies/page.tsx` — list table, create modal, acknowledgment count
+- [x] **Nav:** Policies link added to app-shell sidebar
+- [x] **Key Metric:** Acknowledgment count per policy visible in table
+- [x] **Tests:** `tests/test_policies.py` — full CRUD + acknowledgment flow (draft rejection)
+- [x] **Alembic:** `0002_add_policies_compliance_ai.py`
 
 #### C1.2 — Compliance Framework + Control Mapping
-**Priority:** P0 | **Complexity:** 1 | **Status:** ❌ NOT STARTED
+**Priority:** P0 | **Complexity:** 1 | **Status:** ✅ COMPLETE
 
 ```
 ComplianceFramework
@@ -207,32 +210,31 @@ ComplianceControl
 └── updated_at: datetime
 ```
 
-- [ ] **Backend:** Both models, schemas, repositories, routers (`/api/v1/frameworks`, `/api/v1/controls`)
-- [ ] **Frontend:** Framework list, control grid/matrix, status toggling, evidence upload (URL)
-- [ ] **Key Metric:** "SOC2 compliance: X% of controls implemented"
-- [ ] **Tests:** Full CRUD + filtering tests
-- [ ] **Alembic:** Generate migration
+- [x] **Backend:** `app/models/compliance.py`, `app/schemas/compliance.py`, `app/repositories/compliance_repo.py`, `app/api/v1/compliance.py`
+- [x] **API routes:** `GET/POST /api/v1/frameworks`, `GET/PUT/DELETE /{id}`, `GET /{id}/posture`, `GET /{id}/controls`, `GET/POST/PUT/DELETE /api/v1/controls`
+- [x] **Frontend:** `src/app/(app)/compliance/page.tsx` — expandable framework cards, click-to-cycle control status, evidence URL display
+- [x] **Nav:** Compliance link added to app-shell sidebar
+- [x] **Key Metric:** Compliance % per framework with colour-coded progress bars
+- [x] **Tests:** `tests/test_compliance.py` — CRUD + duplicate slug 409 + posture calculation
+- [x] **Alembic:** `0002_add_policies_compliance_ai.py`
 
 #### C1.3 — Unified Dashboard with Real Data Aggregation
-**Priority:** P0 | **Complexity:** 1 | **Status:** ✅ COMPLETE (partial — see notes)
+**Priority:** P0 | **Complexity:** 1 | **Status:** ✅ COMPLETE
 
-**Implemented widgets:**
 - [x] Total assets by type & environment
 - [x] Open vulnerabilities by severity (critical/high/medium/low)
 - [x] Total scans count
 - [x] Recent scans timeline (last 5)
 - [x] Assets with highest risk scores
-
-**Pending widgets (blocked by C1.1/C1.2):**
-- [ ] Compliance posture % per active framework (needs C1.2)
-- [ ] Policy acknowledgment rate (needs C1.1)
+- [x] Compliance posture % per active framework (progress bars, colour-coded)
+- [x] Policy acknowledgment count (published policies requiring ack + total acknowledgments)
 
 - [x] **Backend:** `app/api/v1/dashboard.py` — `/api/v1/dashboard/stats` with real aggregate queries
-- [x] **Frontend:** `src/app/(app)/dashboard/page.tsx` — Card + Badge components, real data
-- [x] **Tests:** `tests/test_dashboard.py`
+- [x] **Frontend:** `src/app/(app)/dashboard/page.tsx` — compliance posture bars + policy acknowledgment widgets added
+- [x] **Tests:** `tests/test_dashboard.py` — empty state + data assertions including new fields
 
 #### C1.4 — AI Security Copilot (Basic RAG)
-**Priority:** P1 | **Complexity:** 2 | **Status:** ❌ NOT STARTED
+**Priority:** P1 | **Complexity:** 2 | **Status:** ✅ COMPLETE
 
 ```
 AIChatSession
@@ -250,10 +252,15 @@ AIChatMessage
 ├── created_at: datetime
 ```
 
-- [ ] **Backend:** `/api/v1/ai/chat` endpoint, chat session/message routers, AI service (OpenRouter/Ollama)
-- [ ] **Frontend:** Chat panel (side drawer or dedicated page) with message history
-- [ ] **Tests:** Mock LLM responses for deterministic testing
-- [ ] **Alembic:** Generate migration
+- [x] **Backend:** `app/models/ai_chat.py`, `app/schemas/ai_chat.py`, `app/repositories/ai_chat_repo.py`, `app/services/ai_service.py`, `app/api/v1/ai_chat.py`
+- [x] **AI service:** OpenRouter (default) + Ollama fallback, configurable via env vars
+- [x] **Context building:** Queries real DB (assets, vulns, policies, compliance) to ground responses
+- [x] **Graceful degradation:** Returns context summary if LLM is unavailable
+- [x] **API routes:** `POST /api/v1/ai/chat`, `GET /api/v1/ai/sessions`, `GET/DELETE /{session_id}`
+- [x] **Frontend:** `src/app/(app)/ai/page.tsx` — chat UI with optimistic messages, suggested prompts, typing indicator
+- [x] **Nav:** AI Copilot link added to app-shell sidebar
+- [x] **Tests:** `tests/test_ai_chat.py` — 6 tests with mocked LLM (`AsyncMock`)
+- [x] **Alembic:** `0002_add_policies_compliance_ai.py`
 
 ---
 
@@ -264,8 +271,9 @@ AIChatMessage
 - [ ] AI analyzes vulnerability metadata + asset context to score business impact
 - [ ] Considers: asset environment (prod > dev), data sensitivity, exposure surface
 - [ ] Returns `business_impact_score` overriding generic severity
-- [ ] Backend: Enhancement to Vulnerability service
-- [ ] Frontend: Sort/filter by AI-prioritized score
+- [ ] Backend: Enhancement to Vulnerability service + new field on Vulnerability model
+- [ ] Frontend: Sort/filter by AI-prioritized score on vulnerabilities page
+- [ ] Alembic: Migration to add `business_impact_score` column
 
 #### C2.2 — Automated Compliance Evidence Collection
 **Priority:** P1 | **Complexity:** 2 | **Status:** ❌ NOT STARTED
@@ -283,15 +291,18 @@ ComplianceEvidence
 ├── created_at: datetime
 ```
 
-- [ ] Scheduled jobs that auto-collect evidence for controls
-- [ ] Store evidence artifacts linked to controls with history/versioning
-- [ ] **Alembic:** Generate migration
+- [ ] Model, schema, repository, router for ComplianceEvidence
+- [ ] Link evidence to controls from compliance page (attach evidence modal)
+- [ ] Optional: scheduled jobs that auto-collect evidence from linked scans
+- [ ] Frontend: Evidence list per control in compliance view
+- [ ] Alembic: Migration for `compliance_evidence` table
 
 #### C2.3 — Cloud Security Posture Management (CSPM) Mock Integration
 **Priority:** P2 | **Complexity:** 2 | **Status:** ❌ NOT STARTED
 - [ ] Simulate cloud misconfiguration findings (CIS benchmark rules)
 - [ ] Rules: "S3 bucket is public", "Security group allows 0.0.0.0/0 on port 22"
-- [ ] Creates realistic findings that populate the Vulnerability model
+- [ ] Auto-creates Vulnerability records with `cve_id = "CSPM-*"` identifiers
+- [ ] Frontend: CSPM findings badge/filter on vulnerabilities page
 
 ---
 
@@ -303,12 +314,12 @@ ComplianceEvidence
 | W1 | C0.2 (Assets) | 0 | Full asset CRUD + UI | ✅ Done |
 | W1 | C0.3 (Vulnerabilities) | 0 | Full vuln CRUD + UI | ✅ Done |
 | W1 | C0.4 (SecurityScans) | 0 | Replace mock with real | ✅ Done |
-| W2 | Alembic migration | 0 | Generate + apply initial migration | ⚠️ Pending |
-| W2 | dclaw-manifest.json | 0 | DPanel registration | ⚠️ Pending |
-| W2 | C1.1 (Policies) | 1 | Policy + acknowledgment system | ❌ Not started |
-| W2 | C1.2 (Compliance) | 1 | Framework + control mapping | ❌ Not started |
-| W2 | C1.3 (Dashboard polish) | 1 | Add compliance + policy widgets | ⚠️ Partial |
-| W3 | C1.4 (AI Copilot) | 2 | LLM chat with DB context | ❌ Not started |
+| W2 | Alembic migrations | 0 | 0001 + 0002 generated and committed | ✅ Done |
+| W2 | dclaw-manifest.json | 0 | DPanel registration | ✅ Done |
+| W2 | C1.1 (Policies) | 1 | Policy + acknowledgment system | ✅ Done |
+| W2 | C1.2 (Compliance) | 1 | Framework + control mapping | ✅ Done |
+| W2 | C1.3 (Dashboard polish) | 1 | Add compliance + policy widgets | ✅ Done |
+| W3 | C1.4 (AI Copilot) | 2 | LLM chat with DB context | ✅ Done |
 | W3 | C2.1 (AI Prioritization) | 2 | Smart vuln scoring | ❌ Not started |
 | W4 | C2.2 (Evidence) | 2 | Auto-evidence collection | ❌ Not started |
 | W4 | C2.3 (CSPM mock) | 2 | Simulated cloud findings | ❌ Not started |
@@ -322,14 +333,18 @@ Asset 1--* Vulnerability
 Asset 1--* SecurityScan
 Policy 1--* PolicyAcknowledgment
 ComplianceFramework 1--* ComplianceControl
-ComplianceControl 1--* ComplianceEvidence
+ComplianceControl 1--* ComplianceEvidence   (C2.2 — pending)
 AIChatSession 1--* AIChatMessage
 ```
 
 **Currently implemented:**
 ```
-Asset 1--* Vulnerability    ✅
-Asset 1--* SecurityScan     ✅
+Asset 1--* Vulnerability              ✅
+Asset 1--* SecurityScan               ✅
+Policy 1--* PolicyAcknowledgment      ✅
+ComplianceFramework 1--* ComplianceControl  ✅
+AIChatSession 1--* AIChatMessage      ✅
+ComplianceControl 1--* ComplianceEvidence   ❌ (C2.2)
 ```
 
 ---
@@ -347,15 +362,16 @@ Asset 1--* SecurityScan     ✅
 - [x] No CRM scaffold leftovers in any file
 - [x] `frontend/public/dclaw-manifest.json` created
 - [x] Initial alembic migration generated and committed (`0001_initial_schema.py`)
+- [x] C1.x alembic migration generated and committed (`0002_add_policies_compliance_ai.py`)
 
 ## Success Criteria for v1.2 Demo
 
 1. [x] User can add assets to their inventory
 2. [x] User can log vulnerabilities linked to assets
 3. [x] User can run security scans and see results
-4. [ ] User can publish policies and track acknowledgments (needs C1.1)
-5. [ ] User can map controls to SOC2 and track compliance % (needs C1.2)
+4. [x] User can publish policies and track acknowledgments ✅ (C1.1 done)
+5. [x] User can map controls to SOC2 and track compliance % ✅ (C1.2 done)
 6. [x] Dashboard shows real aggregate data (not mock)
-7. [ ] AI copilot answers questions using real DB data (needs C1.4)
+7. [x] AI copilot answers questions using real DB data ✅ (C1.4 done)
 8. [x] All endpoints have tests (70%+ coverage target)
 9. [x] Docker compose up brings up complete stack
