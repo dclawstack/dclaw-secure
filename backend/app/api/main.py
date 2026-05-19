@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.routes import health
-from app.api.v1 import assets, vulnerabilities, security_scans, dashboard, policies, compliance, ai_chat, cspm, siem, identities, incidents
+from app.api.v1 import assets, vulnerabilities, security_scans, dashboard, policies, compliance, ai_chat, cspm, siem, identities, incidents, pentests, secret_scans, threat_intel
 
 
 @asynccontextmanager
@@ -40,3 +40,7 @@ app.include_router(cspm.router, prefix="/api/v1", tags=["cspm"])
 app.include_router(siem.router, prefix="/api/v1/siem", tags=["siem"])
 app.include_router(identities.router, prefix="/api/v1/identities", tags=["identities"])
 app.include_router(incidents.router, prefix="/api/v1/incidents", tags=["incidents"])
+app.include_router(pentests.router, prefix="/api/v1/pentests", tags=["pentests"])
+app.include_router(pentests.findings_router, prefix="/api/v1/pentest-findings", tags=["pentest-findings"])
+app.include_router(secret_scans.router, prefix="/api/v1", tags=["secret-scans"])
+app.include_router(threat_intel.router, prefix="/api/v1/threat-intel", tags=["threat-intel"])
