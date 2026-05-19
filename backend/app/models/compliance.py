@@ -1,10 +1,10 @@
-"""ComplianceFramework and ComplianceControl models."""
+"""ComplianceFramework, ComplianceControl and ComplianceEvidence models."""
 
 import uuid
 from datetime import datetime, date
 from enum import StrEnum
 
-from sqlalchemy import String, Text, Boolean, Date, ForeignKey, Enum
+from sqlalchemy import String, Text, Boolean, Date, DateTime, ForeignKey, Enum, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -16,6 +16,14 @@ class ControlStatus(StrEnum):
     PARTIALLY_IMPLEMENTED = "partially_implemented"
     IMPLEMENTED = "implemented"
     NOT_APPLICABLE = "not_applicable"
+
+
+class EvidenceType(StrEnum):
+    SCREENSHOT = "screenshot"
+    EXPORT = "export"
+    POLICY = "policy"
+    SCAN_REPORT = "scan_report"
+    MANUAL = "manual"
 
 
 class ComplianceFramework(Base):
@@ -58,4 +66,30 @@ class ComplianceControl(Base):
 
     framework: Mapped["ComplianceFramework"] = relationship(
         "ComplianceFramework", back_populates="controls", lazy="selectin"
+    )
+    evidence: Mapped[list["ComplianceEvidence"]] = relationship(
+        "ComplianceEvidence", back_populates="control", lazy="selectin",
+        order_by="ComplianceEvidence.collected_at",
+    )
+
+
+class ComplianceEvidence(Base):
+    __tablename__ = "compliance_evidence"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    control_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("compliance_controls.id", ondelete="CASCADE"), nullable=False
+    )
+    evidence_type: Mapped[EvidenceType] = mapped_column(
+        Enum(EvidenceType), nullable=False, default=EvidenceType.MANUAL
+    )
+    description: Mapped[str] = mapped_column(String(512), nullable=False)
+    artifact_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    artifact_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    collected_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    collected_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+
+    control: Mapped["ComplianceControl"] = relationship(
+        "ComplianceControl", back_populates="evidence", lazy="selectin"
     )

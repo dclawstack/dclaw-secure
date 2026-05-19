@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Bug, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Bug, Pencil, Trash2, AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import {
   createVulnerability,
   updateVulnerability,
   deleteVulnerability,
+  prioritizeVulnerability,
   listAssets,
 } from "@/lib/api";
 import type { Vulnerability, Severity, VulnStatus, Asset } from "@/lib/api";
@@ -172,6 +173,7 @@ export default function VulnerabilitiesPage() {
   const [editingVuln, setEditingVuln] = useState<Vulnerability | null>(null);
   const [filterSev, setFilterSev] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [prioritizing, setPrioritizing] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -210,6 +212,16 @@ export default function VulnerabilitiesPage() {
     load();
   };
 
+  const handlePrioritize = async (id: string) => {
+    setPrioritizing(id);
+    try {
+      const updated = await prioritizeVulnerability(id);
+      setVulns(vs => vs.map(v => v.id === id ? updated : v));
+    } finally {
+      setPrioritizing(null);
+    }
+  };
+
   const assetMap = Object.fromEntries(assets.map((a) => [a.id, a]));
 
   return (
@@ -245,14 +257,15 @@ export default function VulnerabilitiesPage() {
               <th className="px-4 py-3 text-left font-medium">Severity</th>
               <th className="px-4 py-3 text-left font-medium">Status</th>
               <th className="px-4 py-3 text-left font-medium">CVSS</th>
+              <th className="px-4 py-3 text-left font-medium">AI Risk</th>
               <th className="px-4 py-3 text-right font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
             ) : vulns.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No vulnerabilities found.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">No vulnerabilities found.</td></tr>
             ) : (
               vulns.map((v) => (
                 <tr key={v.id} className="border-b hover:bg-muted/30">
@@ -275,8 +288,34 @@ export default function VulnerabilitiesPage() {
                     <Badge variant={statusBadge(v.status) as any} className="capitalize">{v.status}</Badge>
                   </td>
                   <td className="px-4 py-3">{v.cvss_score ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    {v.business_impact_score != null ? (
+                      <span
+                        title={v.ai_priority_reason ?? undefined}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          v.business_impact_score >= 70 ? "bg-red-100 text-red-700"
+                          : v.business_impact_score >= 40 ? "bg-yellow-100 text-yellow-700"
+                          : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        <Sparkles className="h-3 w-3" />{Math.round(v.business_impact_score)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost" size="sm"
+                        title="AI prioritize"
+                        onClick={() => handlePrioritize(v.id)}
+                        disabled={prioritizing === v.id}
+                      >
+                        {prioritizing === v.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <Sparkles className="h-4 w-4 text-indigo-500" />}
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => setEditingVuln(v)}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDelete(v.id)} className="text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></Button>
                     </div>

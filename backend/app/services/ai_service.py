@@ -183,7 +183,6 @@ async def generate_response(
         else:
             reply = await _call_openrouter(messages)
     except Exception as exc:
-        # Graceful degradation: return a helpful message with context summary
         reply = (
             "I'm currently unable to reach the AI backend. "
             f"Here's a summary of your security posture from the database:\n\n{context_text}\n\n"
@@ -191,3 +190,62 @@ async def generate_response(
         )
 
     return reply, sources
+
+
+# ─── C2.1 Vulnerability Prioritization ──────────────────────────────────────
+
+_SEVERITY_BASE = {"critical": 85, "high": 65, "medium": 40, "low": 20, "info": 5}
+_ENV_MULTIPLIER = {"production": 1.0, "staging": 0.7, "development": 0.4}
+
+
+def _heuristic_score(severity: str, environment: str, cvss: float | None) -> float:
+    """Fallback score when LLM is unavailable."""
+    base = _SEVERITY_BASE.get(severity, 40)
+    mult = _ENV_MULTIPLIER.get(environment, 0.6)
+    if cvss is not None:
+        base = max(base, cvss * 10)
+    return min(round(base * mult, 1), 100.0)
+
+
+async def prioritize_vulnerability(
+    vuln_title: str,
+    vuln_description: str,
+    severity: str,
+    cvss_score: float | None,
+    cve_id: str | None,
+    asset_name: str,
+    asset_type: str,
+    environment: str,
+) -> tuple[float, str]:
+    """Return (business_impact_score 0-100, reason string)."""
+    prompt = (
+        "You are a security risk analyst. Score the business impact of this vulnerability "
+        "on a scale of 0 to 100, where 100 is catastrophic immediate business impact.\n\n"
+        f"Vulnerability: {vuln_title}\n"
+        f"Description: {vuln_description}\n"
+        f"Severity: {severity.upper()}"
+        + (f" | CVSS: {cvss_score}" if cvss_score else "")
+        + (f" | CVE: {cve_id}" if cve_id else "") + "\n"
+        f"Affected asset: {asset_name} ({asset_type}) in {environment} environment\n\n"
+        "Respond with exactly two lines:\n"
+        "SCORE: <integer 0-100>\n"
+        "REASON: <one sentence explaining the score>"
+    )
+    messages = [{"role": "user", "content": prompt}]
+    try:
+        if settings.ai_provider == "ollama":
+            raw = await _call_ollama(messages)
+        else:
+            raw = await _call_openrouter(messages)
+        score_line = next((l for l in raw.splitlines() if l.startswith("SCORE:")), "")
+        reason_line = next((l for l in raw.splitlines() if l.startswith("REASON:")), "")
+        score = float(score_line.replace("SCORE:", "").strip())
+        score = max(0.0, min(100.0, score))
+        reason = reason_line.replace("REASON:", "").strip() or raw[:200]
+    except Exception:
+        score = _heuristic_score(severity, environment, cvss_score)
+        reason = (
+            f"Heuristic score: {severity} severity on a {environment} asset "
+            + (f"(CVSS {cvss_score})" if cvss_score else "") + "."
+        )
+    return score, reason

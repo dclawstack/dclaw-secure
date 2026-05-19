@@ -14,6 +14,7 @@ from app.schemas.vulnerability import (
     VulnerabilityOut,
     VulnerabilityListResponse,
 )
+from app.services.ai_service import prioritize_vulnerability
 
 router = APIRouter(tags=["vulnerabilities"])
 
@@ -95,3 +96,33 @@ async def delete_vulnerability(vuln_id: uuid.UUID, db: AsyncSession = Depends(ge
         raise HTTPException(status_code=404, detail="Vulnerability not found")
     await repo.delete(vuln)
     return None
+
+
+@router.post("/{vuln_id}/prioritize", response_model=VulnerabilityOut)
+async def prioritize_vuln(vuln_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Use AI to compute a business_impact_score for this vulnerability."""
+    repo = VulnerabilityRepository(db)
+    vuln = await repo.get_by_id(vuln_id)
+    if not vuln:
+        raise HTTPException(status_code=404, detail="Vulnerability not found")
+
+    asset_repo = AssetRepository(db)
+    asset = await asset_repo.get_by_id(vuln.asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    score, reason = await prioritize_vulnerability(
+        vuln_title=vuln.title,
+        vuln_description=vuln.description,
+        severity=vuln.severity.value,
+        cvss_score=vuln.cvss_score,
+        cve_id=vuln.cve_id,
+        asset_name=asset.name,
+        asset_type=asset.asset_type.value,
+        environment=asset.environment.value,
+    )
+    vuln.business_impact_score = score
+    vuln.ai_priority_reason = reason
+    await db.commit()
+    await db.refresh(vuln)
+    return vuln
