@@ -12,6 +12,12 @@ import {
   ShieldCheck,
   Sparkles,
   ChevronRight,
+  Activity,
+  Users,
+  Crosshair,
+  Key,
+  AlertTriangle,
+  Radar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +29,12 @@ const navItems = [
   { href: "/policies", label: "Policies", icon: FileText },
   { href: "/compliance", label: "Compliance", icon: ShieldCheck },
   { href: "/ai", label: "AI Copilot", icon: Sparkles },
+  { href: "/siem", label: "SIEM", icon: Activity },
+  { href: "/identities", label: "Identities", icon: Users },
+  { href: "/pentests", label: "Pen Tests", icon: Crosshair },
+  { href: "/secret-scans", label: "Secret Scan", icon: Key },
+  { href: "/incidents", label: "Incidents", icon: AlertTriangle },
+  { href: "/threat-intel", label: "Threat Intel", icon: Radar },
 ];
 
 function NavItem({

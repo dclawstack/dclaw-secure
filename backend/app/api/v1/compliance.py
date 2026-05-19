@@ -3,15 +3,19 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from app.core.database import get_db
 from app.models.compliance import ComplianceFramework, ComplianceControl, ComplianceEvidence
+from app.models.compliance_scan import ComplianceScan
 from app.repositories.compliance_repo import FrameworkRepository, ControlRepository, EvidenceRepository
 from app.schemas.compliance import (
     FrameworkCreate, FrameworkUpdate, FrameworkOut, FrameworkListResponse,
     ControlCreate, ControlUpdate, ControlOut, ControlListResponse,
     EvidenceCreate, EvidenceOut, EvidenceListResponse,
 )
+from app.schemas.compliance_scan import ComplianceScanOut, ComplianceScanListResponse
+from app.services.compliance_scanner import scan_framework, ScanTrigger
 
 router = APIRouter(tags=["compliance"])
 
@@ -183,3 +187,55 @@ async def delete_evidence(evidence_id: uuid.UUID, db: AsyncSession = Depends(get
         raise HTTPException(status_code=404, detail="Evidence not found")
     await ev_repo.delete(ev)
     return None
+
+
+# ── Compliance Scans ──────────────────────────────────────────────────────────
+
+@router.post("/frameworks/{framework_id}/scan", response_model=ComplianceScanOut, status_code=201)
+async def trigger_scan(
+    framework_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    fw_repo = FrameworkRepository(db)
+    fw = await fw_repo.get_by_id(framework_id)
+    if not fw:
+        raise HTTPException(status_code=404, detail="Framework not found")
+    try:
+        scan = await scan_framework(
+            framework_id=framework_id,
+            db=db,
+            triggered_by="api",
+            scan_type=ScanTrigger.manual,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return scan
+
+
+@router.get("/frameworks/{framework_id}/scans", response_model=ComplianceScanListResponse)
+async def list_scans(
+    framework_id: uuid.UUID,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+):
+    fw_repo = FrameworkRepository(db)
+    fw = await fw_repo.get_by_id(framework_id)
+    if not fw:
+        raise HTTPException(status_code=404, detail="Framework not found")
+
+    result = await db.execute(
+        select(ComplianceScan)
+        .where(ComplianceScan.framework_id == framework_id)
+        .order_by(ComplianceScan.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    items = list(result.scalars().all())
+
+    count_result = await db.execute(
+        select(func.count()).select_from(ComplianceScan)
+        .where(ComplianceScan.framework_id == framework_id)
+    )
+    total = count_result.scalar() or 0
+    return {"items": items, "total": total, "offset": offset, "limit": limit}

@@ -15,6 +15,13 @@ from app.models.security_scan import SecurityScan
 from app.models.policy import Policy, PolicyAcknowledgment
 from app.models.compliance import ComplianceFramework, ComplianceControl, ComplianceEvidence
 from app.models.ai_chat import AIChatSession, AIChatMessage
+from app.models.siem_event import SiemEvent
+from app.models.identity import IdentityProfile, BehaviorEvent
+from app.models.compliance_scan import ComplianceScan
+from app.models.incident import Incident, IncidentAction
+from app.models.pentest import PenTestEngagement, PenTestFinding
+from app.models.secret_scan import SecretScanJob, SecretFinding
+from app.models.threat_intel import ThreatFeed, ThreatIOC
 
 # this is the Alembic Config object
 config = context.config

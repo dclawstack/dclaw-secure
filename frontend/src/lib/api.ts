@@ -571,4 +571,142 @@ export async function getChatSession(id: string): Promise<ChatSession> {
   return fetchJson<ChatSession>(`/api/v1/ai/sessions/${id}`);
 }
 
+// ─── SIEM ───
+export type SiemEventType = "authentication" | "network" | "endpoint" | "application" | "cloud" | "threat";
+export type SiemSeverity = "critical" | "high" | "medium" | "low" | "info";
+
+export interface SiemEvent {
+  id: string;
+  source_system: string;
+  event_type: SiemEventType;
+  severity: SiemSeverity;
+  raw_event: Record<string, unknown> | null;
+  normalized_data: Record<string, unknown> | null;
+  asset_id: string | null;
+  correlation_id: string | null;
+  is_anomaly: boolean;
+  risk_score: number | null;
+  ai_analysis: string | null;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface SiemEventCreate {
+  source_system: string;
+  event_type: SiemEventType;
+  severity?: SiemSeverity;
+  raw_event?: Record<string, unknown>;
+  normalized_data?: Record<string, unknown>;
+  asset_id?: string;
+}
+
+export interface SiemEventListResponse {
+  items: SiemEvent[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface SiemSummaryResponse {
+  total_events: number;
+  anomalies: number;
+  by_event_type: Record<string, number>;
+  by_severity: Record<string, number>;
+  recent_anomalies: SiemEvent[];
+}
+
+export async function listSiemEvents(params?: {
+  event_type?: string;
+  severity?: string;
+  is_anomaly?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<SiemEventListResponse> {
+  const q = new URLSearchParams();
+  if (params?.event_type) q.set("event_type", params.event_type);
+  if (params?.severity) q.set("severity", params.severity);
+  if (params?.is_anomaly !== undefined) q.set("is_anomaly", String(params.is_anomaly));
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.offset) q.set("offset", String(params.offset));
+  return fetchJson<SiemEventListResponse>(`/api/v1/siem/events?${q}`);
+}
+
+export async function createSiemEvent(data: SiemEventCreate, analyze = false): Promise<SiemEvent> {
+  return fetchJson<SiemEvent>(`/api/v1/siem/events?analyze=${analyze}`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function analyzeSiemEvent(id: string): Promise<SiemEvent> {
+  return fetchJson<SiemEvent>(`/api/v1/siem/events/${id}/analyze`, { method: "POST" });
+}
+
+export async function getSiemSummary(): Promise<SiemSummaryResponse> {
+  return fetchJson<SiemSummaryResponse>("/api/v1/siem/events/summary");
+}
+
+// ─── Identity Security ───
+export type BehaviorEventType = "login" | "logout" | "file_access" | "api_call" | "privilege_escalation" | "data_export" | "failed_auth";
+
+export interface IdentityProfile {
+  id: string;
+  email: string;
+  display_name: string | null;
+  department: string | null;
+  role: string | null;
+  risk_score: number;
+  is_active: boolean;
+  last_seen: string | null;
+  ai_analysis: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BehaviorEventOut {
+  id: string;
+  identity_id: string;
+  event_type: BehaviorEventType;
+  ip_address: string | null;
+  user_agent: string | null;
+  location: string | null;
+  event_metadata: Record<string, unknown> | null;
+  risk_contribution: number;
+  is_flagged: boolean;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface IdentityListResponse {
+  items: IdentityProfile[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export async function listIdentities(params?: { department?: string; role?: string; min_risk_score?: number }): Promise<IdentityListResponse> {
+  const q = new URLSearchParams();
+  if (params?.department) q.set("department", params.department);
+  if (params?.role) q.set("role", params.role);
+  if (params?.min_risk_score !== undefined) q.set("min_risk_score", String(params.min_risk_score));
+  return fetchJson<IdentityListResponse>(`/api/v1/identities?${q}`);
+}
+
+export async function createIdentity(data: { email: string; display_name?: string; department?: string; role?: string }): Promise<IdentityProfile> {
+  return fetchJson<IdentityProfile>("/api/v1/identities", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function analyzeIdentity(id: string): Promise<IdentityProfile> {
+  return fetchJson<IdentityProfile>(`/api/v1/identities/${id}/analyze`, { method: "POST" });
+}
+
+export async function getRiskyIdentities(threshold?: number): Promise<IdentityProfile[]> {
+  const q = threshold !== undefined ? `?threshold=${threshold}` : "";
+  return fetchJson<IdentityProfile[]>(`/api/v1/identities/risky${q}`);
+}
+
+export async function logBehavior(identityId: string, data: { event_type: BehaviorEventType; ip_address?: string; location?: string }): Promise<BehaviorEventOut> {
+  return fetchJson<BehaviorEventOut>(`/api/v1/identities/${identityId}/events`, { method: "POST", body: JSON.stringify(data) });
+}
+
 export { ApiError };
