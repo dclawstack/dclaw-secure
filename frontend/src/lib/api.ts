@@ -646,4 +646,67 @@ export async function getSiemSummary(): Promise<SiemSummaryResponse> {
   return fetchJson<SiemSummaryResponse>("/api/v1/siem/events/summary");
 }
 
+// ─── Identity Security ───
+export type BehaviorEventType = "login" | "logout" | "file_access" | "api_call" | "privilege_escalation" | "data_export" | "failed_auth";
+
+export interface IdentityProfile {
+  id: string;
+  email: string;
+  display_name: string | null;
+  department: string | null;
+  role: string | null;
+  risk_score: number;
+  is_active: boolean;
+  last_seen: string | null;
+  ai_analysis: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BehaviorEventOut {
+  id: string;
+  identity_id: string;
+  event_type: BehaviorEventType;
+  ip_address: string | null;
+  user_agent: string | null;
+  location: string | null;
+  event_metadata: Record<string, unknown> | null;
+  risk_contribution: number;
+  is_flagged: boolean;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface IdentityListResponse {
+  items: IdentityProfile[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export async function listIdentities(params?: { department?: string; role?: string; min_risk_score?: number }): Promise<IdentityListResponse> {
+  const q = new URLSearchParams();
+  if (params?.department) q.set("department", params.department);
+  if (params?.role) q.set("role", params.role);
+  if (params?.min_risk_score !== undefined) q.set("min_risk_score", String(params.min_risk_score));
+  return fetchJson<IdentityListResponse>(`/api/v1/identities?${q}`);
+}
+
+export async function createIdentity(data: { email: string; display_name?: string; department?: string; role?: string }): Promise<IdentityProfile> {
+  return fetchJson<IdentityProfile>("/api/v1/identities", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function analyzeIdentity(id: string): Promise<IdentityProfile> {
+  return fetchJson<IdentityProfile>(`/api/v1/identities/${id}/analyze`, { method: "POST" });
+}
+
+export async function getRiskyIdentities(threshold?: number): Promise<IdentityProfile[]> {
+  const q = threshold !== undefined ? `?threshold=${threshold}` : "";
+  return fetchJson<IdentityProfile[]>(`/api/v1/identities/risky${q}`);
+}
+
+export async function logBehavior(identityId: string, data: { event_type: BehaviorEventType; ip_address?: string; location?: string }): Promise<BehaviorEventOut> {
+  return fetchJson<BehaviorEventOut>(`/api/v1/identities/${identityId}/events`, { method: "POST", body: JSON.stringify(data) });
+}
+
 export { ApiError };
