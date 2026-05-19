@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dclaw-secure-postgres
+  namespace: dclaw-core
+  labels:
+    app.kubernetes.io/name: dclaw-secure-postgres
+    app.kubernetes.io/part-of: dclaw-platform
+    app.kubernetes.io/component: database
+spec:
+  serviceName: dclaw-secure-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dclaw-secure-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dclaw-secure-postgres
+        app.kubernetes.io/part-of: dclaw-platform
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+              name: pg
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: POSTGRES_DB
+              value: dclaw_secure
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "dclaw_secure"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "512Mi"
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dclaw-secure-postgres
+  namespace: dclaw-core
+  labels:
+    app.kubernetes.io/name: dclaw-secure-postgres
+    app.kubernetes.io/part-of: dclaw-platform
+    app.kubernetes.io/component: database
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: pg
+      name: pg
+  selector:
+    app.kubernetes.io/name: dclaw-secure-postgres

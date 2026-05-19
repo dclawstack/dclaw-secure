@@ -120,22 +120,24 @@ export default function PoliciesPage() {
                   <Label>Status</Label>
                   <Select
                     value={form.status}
-                    onValueChange={v => setForm(f => ({ ...f, status: v as any }))}
-                    options={[
-                      { value: "draft", label: "Draft" },
-                      { value: "published", label: "Published" },
-                      { value: "archived", label: "Archived" },
-                    ]}
-                  />
+                    onChange={e => setForm(f => ({ ...f, status: e.target.value as any }))}
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                    <option value="archived">Archived</option>
+                  </Select>
                 </div>
               </div>
               <div className="space-y-1">
                 <Label>Category</Label>
                 <Select
                   value={form.category}
-                  onValueChange={v => setForm(f => ({ ...f, category: v as any }))}
-                  options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))}
-                />
+                  onChange={e => setForm(f => ({ ...f, category: e.target.value as any }))}
+                >
+                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label>Content (Markdown)</Label>

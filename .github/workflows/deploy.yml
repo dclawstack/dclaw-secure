@@ -47,7 +47,7 @@ jobs:
       - name: Deploy to Kubernetes
         run: |
           helm upgrade --install dclaw-secure ./helm/ \
-            --namespace dclaw \
+            --namespace dclaw-core \
             --create-namespace \
             --set image.backend.tag=${{ inputs.image_tag }} \
             --set image.frontend.tag=${{ inputs.image_tag }} \
@@ -56,5 +56,5 @@ jobs:
 
       - name: Verify deployment
         run: |
-          kubectl rollout status deployment/dclaw-secure-backend -n dclaw --timeout=2m
-          kubectl rollout status deployment/dclaw-secure-frontend -n dclaw --timeout=2m
+          kubectl rollout status deployment/dclaw-secure-backend -n dclaw-core --timeout=2m
+          kubectl rollout status deployment/dclaw-secure-frontend -n dclaw-core --timeout=2m

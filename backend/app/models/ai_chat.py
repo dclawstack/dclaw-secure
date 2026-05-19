@@ -28,7 +28,8 @@ class AIChatSession(Base):
 
     messages: Mapped[list["AIChatMessage"]] = relationship(
         "AIChatMessage", back_populates="session", lazy="selectin",
-        order_by="AIChatMessage.created_at"
+        order_by="AIChatMessage.created_at",
+        cascade="all, delete-orphan",
     )
 
 
