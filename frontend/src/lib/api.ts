@@ -246,6 +246,7 @@ export interface DashboardStats {
   assets_by_environment: Record<string, number>;
   vulnerabilities_by_severity: Record<string, number>;
   recent_scans: SecurityScan[];
+  top_risk_assets: Asset[];
   published_policies_requiring_ack: number;
   total_acknowledgments: number;
   compliance_posture: CompliancePostureItem[];
@@ -358,6 +359,7 @@ export interface ComplianceControl {
   notes: string | null;
   assigned_to: string | null;
   due_date: string | null;
+  evidence: ComplianceEvidence[];
   created_at: string;
   updated_at: string;
 }

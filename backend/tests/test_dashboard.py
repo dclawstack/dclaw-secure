@@ -15,6 +15,7 @@ async def test_dashboard_stats_empty(client: AsyncClient):
     assert data["published_policies_requiring_ack"] == 0
     assert data["total_acknowledgments"] == 0
     assert data["compliance_posture"] == []
+    assert data["top_risk_assets"] == []
 
 
 @pytest.mark.asyncio
@@ -55,15 +56,27 @@ async def test_dashboard_stats_with_data(client: AsyncClient):
         "findings_count": 2,
     })
 
+    # Create a high-risk asset to test top_risk_assets
+    await client.post("/api/v1/assets", json={
+        "name": "critical-db",
+        "asset_type": "database",
+        "environment": "production",
+        "risk_score": 90,
+    })
+
     response = await client.get("/api/v1/dashboard/stats")
     assert response.status_code == 200
     data = response.json()
-    assert data["total_assets"] == 2
+    assert data["total_assets"] == 3
     assert data["total_vulnerabilities"] == 2
     assert data["critical_vulnerabilities"] == 1
     assert data["open_vulnerabilities"] == 1
     assert data["total_scans"] == 1
-    assert data["assets_by_environment"]["production"] == 1
+    assert data["assets_by_environment"]["production"] == 2
     assert data["assets_by_environment"]["staging"] == 1
     assert data["vulnerabilities_by_severity"]["critical"] == 1
     assert data["vulnerabilities_by_severity"]["medium"] == 1
+    # Top risk assets: only assets with risk_score > 0 are returned
+    assert len(data["top_risk_assets"]) == 1
+    assert data["top_risk_assets"][0]["name"] == "critical-db"
+    assert data["top_risk_assets"][0]["risk_score"] == 90

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getDashboardStats, type DashboardStats, type SecurityScan } from "@/lib/api";
+import { getDashboardStats, type DashboardStats, type SecurityScan, type Asset } from "@/lib/api";
 
 function StatCard({
   title,
@@ -258,6 +258,38 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Top risk assets */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
+            Assets with Highest Risk Scores
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data?.top_risk_assets && data.top_risk_assets.length > 0 ? (
+            <div className="space-y-2">
+              {data.top_risk_assets.map((asset) => (
+                <div key={asset.id} className="flex items-center justify-between rounded-md border px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <Server className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">{asset.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{asset.asset_type} · {asset.environment}</p>
+                    </div>
+                  </div>
+                  <span className={`text-sm font-bold ${asset.risk_score >= 75 ? "text-red-600" : asset.risk_score >= 50 ? "text-amber-600" : "text-foreground"}`}>
+                    {asset.risk_score}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No assets with non-zero risk scores yet.</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent scans */}
       <Card>

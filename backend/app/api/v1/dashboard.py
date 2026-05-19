@@ -45,6 +45,13 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db)):
         (await db.execute(select(SecurityScan).order_by(SecurityScan.created_at.desc()).limit(5))).scalars().all()
     )
 
+    # Top 5 assets by risk score
+    top_risk_assets = list(
+        (await db.execute(
+            select(Asset).where(Asset.risk_score > 0).order_by(Asset.risk_score.desc()).limit(5)
+        )).scalars().all()
+    )
+
     # Policy acknowledgment stats
     published_requiring_ack = (
         await db.execute(
@@ -100,6 +107,7 @@ async def get_dashboard_stats(db: AsyncSession = Depends(get_db)):
         "assets_by_environment": assets_by_environment,
         "vulnerabilities_by_severity": vulnerabilities_by_severity,
         "recent_scans": recent_scans,
+        "top_risk_assets": top_risk_assets,
         "published_policies_requiring_ack": published_requiring_ack,
         "total_acknowledgments": total_acknowledgments,
         "compliance_posture": compliance_posture,

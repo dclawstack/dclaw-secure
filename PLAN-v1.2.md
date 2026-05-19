@@ -225,13 +225,14 @@ ComplianceControl
 - [x] Open vulnerabilities by severity (critical/high/medium/low)
 - [x] Total scans count
 - [x] Recent scans timeline (last 5)
-- [x] Assets with highest risk scores
+- [x] Assets with highest risk scores (top 5 by risk_score, colour-coded)
 - [x] Compliance posture % per active framework (progress bars, colour-coded)
 - [x] Policy acknowledgment count (published policies requiring ack + total acknowledgments)
 
-- [x] **Backend:** `app/api/v1/dashboard.py` — `/api/v1/dashboard/stats` with real aggregate queries
-- [x] **Frontend:** `src/app/(app)/dashboard/page.tsx` — compliance posture bars + policy acknowledgment widgets added
-- [x] **Tests:** `tests/test_dashboard.py` — empty state + data assertions including new fields
+- [x] **Backend:** `app/api/v1/dashboard.py` — `/api/v1/dashboard/stats` with real aggregate queries including `top_risk_assets`
+- [x] **Frontend:** `src/app/(app)/dashboard/page.tsx` — top risk assets, compliance posture bars + policy acknowledgment widgets
+- [x] **API client:** `DashboardStats` interface includes `top_risk_assets: Asset[]`
+- [x] **Tests:** `tests/test_dashboard.py` — empty state + data assertions including `top_risk_assets`
 
 #### C1.4 — AI Security Copilot (Basic RAG)
 **Priority:** P1 | **Complexity:** 2 | **Status:** ✅ COMPLETE
@@ -295,7 +296,7 @@ ComplianceEvidence
 
 - [x] `ComplianceEvidence` model in `app/models/compliance.py` with `EvidenceType` enum
 - [x] `evidence` relationship on `ComplianceControl` (lazy="selectin")
-- [x] `EvidenceCreate`, `EvidenceOut`, `EvidenceListResponse` schemas; `ControlOut` now includes `evidence: list[EvidenceOut]`
+- [x] `EvidenceCreate`, `EvidenceOut`, `EvidenceListResponse` schemas; `ControlOut` now includes `evidence: list[EvidenceOut]`; `ComplianceControl` TypeScript interface updated with `evidence: ComplianceEvidence[]`
 - [x] `EvidenceRepository` in `compliance_repo.py`
 - [x] API: `GET /controls/{id}/evidence`, `POST /controls/{id}/evidence`, `DELETE /evidence/{id}`
 - [x] Frontend: compliance page shows evidence per control with type icon + description + delete; 📎 button per control opens "Add Evidence" modal
@@ -369,6 +370,8 @@ ComplianceControl 1--* ComplianceEvidence      ✅
 - [x] `frontend/public/dclaw-manifest.json` created
 - [x] Initial alembic migration generated and committed (`0001_initial_schema.py`)
 - [x] C1.x alembic migration generated and committed (`0002_add_policies_compliance_ai.py`)
+- [x] C2.x alembic migration generated and committed (`0003_c2_ai_vuln_evidence_cspm.py`)
+- [x] `backend/pyproject.toml` with `asyncio_mode = "auto"` for pytest-asyncio
 
 ## Success Criteria for v1.2 Demo
 
