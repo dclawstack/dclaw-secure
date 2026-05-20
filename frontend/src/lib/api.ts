@@ -709,4 +709,12 @@ export async function logBehavior(identityId: string, data: { event_type: Behavi
   return fetchJson<BehaviorEventOut>(`/api/v1/identities/${identityId}/events`, { method: "POST", body: JSON.stringify(data) });
 }
 
+// ─── Seed (demo data) ────────────────────────────────────────────────────────
+export async function seedData() {
+  return fetchJson<{ seeded: boolean; assets: number; vulnerabilities: number; security_scans: number; incidents: number; policies: number; siem_events: number; threat_iocs: number; identities: number; pentest_findings: number; secret_findings: number; compliance_controls: number }>("/api/v1/seed", { method: "POST" });
+}
+export async function clearData() {
+  return fetchJson<{ cleared: boolean }>("/api/v1/seed", { method: "DELETE" });
+}
+
 export { ApiError };

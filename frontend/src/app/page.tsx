@@ -1,3 +1,5 @@
+import { SeedControls } from "@/components/SeedControls"
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-white">
@@ -478,6 +480,14 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── SEED CONTROLS — remove this block (and the SeedControls import above) to hide ── */}
+      <section className="border-t py-12 px-4">
+        <div className="mx-auto max-w-lg">
+          <SeedControls />
+        </div>
+      </section>
+      {/* ── END SEED CONTROLS ── */}
 
       {/* Footer */}
       <footer className="border-t bg-white py-12">
