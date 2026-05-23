@@ -9,11 +9,10 @@
 .env
 .env.local
 
-# Obsidian workspace state (keep vault notes, ignore UI/cache)
-vault/.obsidian/workspace*
-vault/.obsidian/cache*
-vault/.obsidian/graph.json
 .vercel
 
-# Generated
+# Generated / local tooling
 graphify-out/
+vault/
+
+testsprite_tests/tmp/config.json
