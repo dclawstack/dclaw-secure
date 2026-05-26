@@ -1,0 +1,27 @@
+# Cloud / production overrides. Use with:
+#   helm install dclaw-secure ./helm -n <ns> -f values-prod.yaml
+
+backend:
+  image:
+    repository: ghcr.io/dclawstack/dclaw-secure-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+frontend:
+  image:
+    repository: ghcr.io/dclawstack/dclaw-secure-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  host: secure.dclawstack.io
+  tls:
+    - secretName: dclaw-secure-tls
+      hosts:
+        - secure.dclawstack.io
