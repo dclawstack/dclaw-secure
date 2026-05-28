@@ -91,7 +91,7 @@ export default function IncidentsPage() {
           <h1 className="text-2xl font-bold flex items-center gap-2"><AlertTriangle className="h-6 w-6 text-red-500" />Incident Response</h1>
           <p className="text-sm text-muted-foreground">Track and respond to security incidents with AI-generated playbooks</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}><Plus className="mr-2 h-4 w-4" />New Incident</Button>
+        <Button data-testid="incident-add-button" aria-label="New incident" onClick={() => setShowCreate(true)}><Plus className="mr-2 h-4 w-4" />New Incident</Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -123,7 +123,7 @@ export default function IncidentsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{selected ? selected.title : "Select an incident"}</CardTitle>
-            {selected && <Button size="sm" variant="outline" onClick={() => setShowAction(true)}><Plus className="mr-1 h-3 w-3" />Action</Button>}
+            {selected && <Button data-testid="incident-action-open" aria-label="Log action" size="sm" variant="outline" onClick={() => setShowAction(true)}><Plus className="mr-1 h-3 w-3" />Action</Button>}
           </CardHeader>
           <CardContent>
             {!selected ? <p className="text-sm text-muted-foreground">Click an incident to view its timeline and AI playbook.</p>
@@ -157,11 +157,11 @@ export default function IncidentsPage() {
       </div>
 
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
+        <DialogContent data-testid="incident-create-dialog">
           <DialogHeader><DialogTitle>New Incident</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Title</Label><Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Phishing email targeting finance team" /></div>
-            <div><Label>Description</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe what happened..." /></div>
+            <div><Label>Title</Label><Input data-testid="incident-title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Phishing email targeting finance team" /></div>
+            <div><Label>Description</Label><Input data-testid="incident-description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe what happened..." /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Severity</Label>
                 <select className="mt-1 w-full rounded border px-3 py-2 text-sm" value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))}>
@@ -176,26 +176,26 @@ export default function IncidentsPage() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button onClick={handleCreate} disabled={saving || !form.title.trim()}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Create</Button>
+              <Button data-testid="incident-create-submit" aria-label="Create incident" onClick={handleCreate} disabled={saving || !form.title.trim()}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Create</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={showAction} onOpenChange={setShowAction}>
-        <DialogContent>
+        <DialogContent data-testid="log-action-dialog">
           <DialogHeader><DialogTitle>Log Action</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>Action Type</Label>
-              <select className="mt-1 w-full rounded border px-3 py-2 text-sm" value={actionForm.action_type} onChange={e => setActionForm(f => ({ ...f, action_type: e.target.value }))}>
+              <select data-testid="log-action-type" className="mt-1 w-full rounded border px-3 py-2 text-sm" value={actionForm.action_type} onChange={e => setActionForm(f => ({ ...f, action_type: e.target.value }))}>
                 {["detected","escalated","contained","notified","remediated","closed","custom"].map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            <div><Label>Description</Label><Input value={actionForm.description} onChange={e => setActionForm(f => ({ ...f, description: e.target.value }))} placeholder="What was done?" /></div>
-            <div><Label>Performed By</Label><Input value={actionForm.performed_by} onChange={e => setActionForm(f => ({ ...f, performed_by: e.target.value }))} placeholder="email or name" /></div>
+            <div><Label>Description</Label><Input data-testid="log-action-description" value={actionForm.description} onChange={e => setActionForm(f => ({ ...f, description: e.target.value }))} placeholder="What was done?" /></div>
+            <div><Label>Performed By</Label><Input data-testid="log-action-performed-by" value={actionForm.performed_by} onChange={e => setActionForm(f => ({ ...f, performed_by: e.target.value }))} placeholder="email or name" /></div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setShowAction(false)}>Cancel</Button>
-              <Button onClick={handleAddAction} disabled={saving || !actionForm.description.trim()}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Log</Button>
+              <Button data-testid="log-action-submit" aria-label="Log action" onClick={handleAddAction} disabled={saving || !actionForm.description.trim()}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Log</Button>
             </div>
           </div>
         </DialogContent>

@@ -100,7 +100,9 @@ export default function PoliciesPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />New Policy</Button>
+            <Button data-testid="policy-add-button" aria-label="Create new policy">
+              <Plus className="mr-2 h-4 w-4" />New Policy
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -160,7 +162,12 @@ export default function PoliciesPage() {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={saving || !form.title || !form.content}>
+                <Button
+                  data-testid="policy-create-submit"
+                  aria-label="Create policy"
+                  onClick={handleCreate}
+                  disabled={saving || !form.title || !form.content}
+                >
                   {saving ? "Creating..." : "Create Policy"}
                 </Button>
               </div>

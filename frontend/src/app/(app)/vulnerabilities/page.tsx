@@ -174,6 +174,7 @@ export default function VulnerabilitiesPage() {
   const [filterSev, setFilterSev] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [prioritizing, setPrioritizing] = useState<string | null>(null);
+  const [reasonOpen, setReasonOpen] = useState<Vulnerability | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -231,7 +232,11 @@ export default function VulnerabilitiesPage() {
           <h1 className="text-2xl font-bold">Vulnerabilities</h1>
           <p className="text-sm text-muted-foreground">Security findings and CVEs</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button
+          data-testid="vulnerability-add-button"
+          aria-label="Add vulnerability"
+          onClick={() => setCreateOpen(true)}
+        >
           <Plus className="mr-2 h-4 w-4" /> Add Vulnerability
         </Button>
       </div>
@@ -290,16 +295,19 @@ export default function VulnerabilitiesPage() {
                   <td className="px-4 py-3">{v.cvss_score ?? "—"}</td>
                   <td className="px-4 py-3">
                     {v.business_impact_score != null ? (
-                      <span
-                        title={v.ai_priority_reason ?? undefined}
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      <button
+                        type="button"
+                        data-testid="ai-priority-badge"
+                        aria-label="View AI priority rationale"
+                        onClick={() => setReasonOpen(v)}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80 ${
                           v.business_impact_score >= 70 ? "bg-red-100 text-red-700"
                           : v.business_impact_score >= 40 ? "bg-yellow-100 text-yellow-700"
                           : "bg-green-100 text-green-700"
                         }`}
                       >
                         <Sparkles className="h-3 w-3" />{Math.round(v.business_impact_score)}
-                      </span>
+                      </button>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
@@ -340,6 +348,29 @@ export default function VulnerabilitiesPage() {
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Edit Vulnerability</DialogTitle></DialogHeader>
             <VulnForm assets={assets} initial={editingVuln} onSubmit={handleUpdate} submitLabel="Save" />
+          </DialogContent>
+        </Dialog>
+      )}
+      {reasonOpen && (
+        <Dialog open onOpenChange={() => setReasonOpen(null)}>
+          <DialogContent data-testid="ai-priority-dialog" className="max-w-lg">
+            <DialogHeader><DialogTitle>AI Priority Rationale</DialogTitle></DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Vulnerability</p>
+                <p className="font-medium">{reasonOpen.title}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Business Impact Score</p>
+                <p className="font-semibold">{Math.round(reasonOpen.business_impact_score ?? 0)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Rationale</p>
+                <p className="whitespace-pre-wrap" data-testid="ai-priority-reason">
+                  {reasonOpen.ai_priority_reason ?? "No rationale available."}
+                </p>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       )}

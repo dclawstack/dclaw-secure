@@ -188,7 +188,7 @@ export default function CompliancePage() {
         </div>
         <Dialog open={fwOpen} onOpenChange={setFwOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />Add Framework</Button>
+            <Button data-testid="framework-add-button" aria-label="Add framework"><Plus className="mr-2 h-4 w-4" />Add Framework</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Add Compliance Framework</DialogTitle></DialogHeader>
@@ -264,7 +264,7 @@ export default function CompliancePage() {
                 {isExpanded && (
                   <CardContent className="pt-0">
                     <div className="mb-3 flex justify-end">
-                      <Button size="sm" variant="outline" onClick={() => { setActiveFwId(fw.id); setCtrlOpen(true); }}>
+                      <Button data-testid="control-add-button" aria-label="Add control" size="sm" variant="outline" onClick={() => { setActiveFwId(fw.id); setCtrlOpen(true); }}>
                         <Plus className="mr-1 h-3.5 w-3.5" />Add Control
                       </Button>
                     </div>

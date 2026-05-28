@@ -205,14 +205,19 @@ export default function AssetsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [filterEnv, setFilterEnv] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("");
   const [cspmRunning, setCspmRunning] = useState(false);
   const [cspmResult, setCspmResult] = useState<CspmScanResponse | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const params = filterEnv ? { environment: filterEnv } : undefined;
-      const resp = await listAssets(params);
+      const params: Record<string, string> = {};
+      if (filterEnv) params.environment = filterEnv;
+      if (filterType) params.asset_type = filterType;
+      if (filterStatus) params.status = filterStatus;
+      const resp = await listAssets(Object.keys(params).length ? (params as any) : undefined);
       setAssets(resp.items);
     } catch (e: any) {
       setError(e.message);
@@ -223,7 +228,7 @@ export default function AssetsPage() {
 
   useEffect(() => {
     load();
-  }, [filterEnv]);
+  }, [filterEnv, filterType, filterStatus]);
 
   const handleCreate = async (data: Record<string, unknown>) => {
     await createAsset(data as any);
@@ -272,7 +277,7 @@ export default function AssetsPage() {
           </Button>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button data-testid="asset-add-button" aria-label="Add asset">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Asset
               </Button>
@@ -301,16 +306,42 @@ export default function AssetsPage() {
       )}
 
       {/* Filters */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Filter by environment:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-muted-foreground">Filter:</span>
         <select
+          data-testid="asset-filter-environment"
+          aria-label="Filter by environment"
           className="rounded-md border border-input bg-background px-3 py-1 text-sm"
           value={filterEnv}
           onChange={(e) => setFilterEnv(e.target.value)}
         >
-          <option value="">All</option>
+          <option value="">All environments</option>
           {ENVIRONMENTS.map((e) => (
             <option key={e} value={e}>{e}</option>
+          ))}
+        </select>
+        <select
+          data-testid="asset-filter-type"
+          aria-label="Filter by type"
+          className="rounded-md border border-input bg-background px-3 py-1 text-sm"
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="">All types</option>
+          {ASSET_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <select
+          data-testid="asset-filter-status"
+          aria-label="Filter by status"
+          className="rounded-md border border-input bg-background px-3 py-1 text-sm"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="">All statuses</option>
+          {STATUSES.map((s) => (
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
       </div>

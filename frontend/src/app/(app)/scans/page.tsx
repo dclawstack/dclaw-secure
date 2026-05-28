@@ -99,7 +99,11 @@ export default function ScansPage() {
           <h1 className="text-2xl font-bold">Security Scans</h1>
           <p className="text-sm text-muted-foreground">Scan runs and results</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button
+          data-testid="scan-add-button"
+          aria-label="New scan"
+          onClick={() => setCreateOpen(true)}
+        >
           <Plus className="mr-2 h-4 w-4" /> New Scan
         </Button>
       </div>
@@ -220,6 +224,8 @@ export default function ScansPage() {
               </select>
             </div>
             <Button
+              data-testid="scan-start-submit"
+              aria-label="Start scan"
               className="w-full"
               onClick={handleCreate}
               disabled={!newScan.target_asset_id}

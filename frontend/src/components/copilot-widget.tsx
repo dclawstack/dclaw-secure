@@ -1,19 +1,63 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Bot, Send, Sparkles, X, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Bot, Send, Sparkles, X, User, History, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { sendChatMessage, type ChatMessage } from "@/lib/api";
+import {
+  sendChatMessage,
+  listChatSessions,
+  getChatSession,
+  type ChatMessage,
+  type ChatSession,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export default function CopilotWidget() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | undefined>();
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  async function refreshSessions() {
+    try {
+      const r = await listChatSessions();
+      setSessions(r.items);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  useEffect(() => {
+    if (open) refreshSessions();
+  }, [open]);
+
+  async function openSession(id: string) {
+    try {
+      const s = await getChatSession(id);
+      setSessionId(s.id);
+      setMessages(s.messages);
+      setHistoryOpen(false);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function newChat() {
+    setSessionId(undefined);
+    setMessages([]);
+    setHistoryOpen(false);
+  }
+
+  function sessionTitle(s: ChatSession): string {
+    if (s.title) return s.title;
+    const firstUser = s.messages.find(m => m.role === "user");
+    return firstUser ? firstUser.content.slice(0, 50) : "New chat";
+  }
 
   async function send() {
     const msg = input.trim();
@@ -34,12 +78,14 @@ export default function CopilotWidget() {
 
     try {
       const res = await sendChatMessage(msg, sessionId);
+      const wasNew = !sessionId;
       setSessionId(res.session_id);
       setMessages(m => [
         ...m.filter(x => x.id !== optimistic.id),
         { ...optimistic, session_id: res.session_id },
         res.message,
       ]);
+      if (wasNew) refreshSessions();
     } catch {
       setMessages(m => m.filter(x => x.id !== optimistic.id));
     } finally {
@@ -58,10 +104,53 @@ export default function CopilotWidget() {
               <Sparkles className="h-4 w-4 text-white" />
               <span className="text-sm font-semibold text-white">AI Security Copilot</span>
             </div>
-            <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white transition-colors">
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                data-testid="copilot-history-toggle"
+                aria-label="Chat history"
+                onClick={() => setHistoryOpen(v => !v)}
+                className="text-white/80 hover:text-white transition-colors p-1"
+              >
+                <History className="h-4 w-4" />
+              </button>
+              <button
+                data-testid="copilot-new-chat"
+                aria-label="New chat"
+                onClick={newChat}
+                className="text-white/80 hover:text-white transition-colors p-1"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white transition-colors p-1">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
+
+          {historyOpen && (
+            <div data-testid="copilot-session-list" className="max-h-40 overflow-y-auto border-b bg-muted/30 p-2">
+              {sessions.length === 0 ? (
+                <p className="px-2 py-2 text-center text-xs text-muted-foreground">No previous chats.</p>
+              ) : (
+                <ul className="space-y-1">
+                  {sessions.map(s => (
+                    <li key={s.id}>
+                      <button
+                        data-testid="copilot-session-item"
+                        onClick={() => openSession(s.id)}
+                        className={cn(
+                          "w-full truncate rounded px-2 py-1 text-left text-xs hover:bg-background",
+                          sessionId === s.id && "bg-background font-medium"
+                        )}
+                      >
+                        {sessionTitle(s)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
